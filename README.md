@@ -1,29 +1,31 @@
-# Artix + dinit no Android (KernelSU)
+# Artix + dinit on Android (KernelSU)
 
-Chroot real em imagem ext4. Sem proot. Desktop via **Termux:X11** (GPU).
+> Languages: **English** · [Português](README.pt.md)
 
-O dinit sobe no boot via KernelSU. SSH fica dentro.
-Serviços Hermes/OmniRoute: só templates dinit em `device/dinit.d/` até haver binários.
+Real chroot on an ext4 image. No proot. Desktop via **Termux:X11** (GPU).
+
+dinit starts at boot through KernelSU. SSH runs inside the container.
+Hermes/OmniRoute services: dinit templates only in `device/dinit.d/` until binaries exist.
 
 ---
 
-## O que precisas
+## Requirements
 
 - KernelSU + ADB
-- Tarball: `armtix-dinit-20260921.tar.xz` — home do Termux ou `/data/local/tmp` (download automático se faltar: [armtix-dinit-20260921.tar.xz](https://armtix.artixlinux.org/images/armtix-dinit-20260921.tar.xz))
-- Módulo `ksu-module` (SELinux do loop)
-- App **Termux:X11** (`com.termux.x11`) — F-Droid ou [GitHub nightly](https://github.com/termux/termux-x11/releases). O Termux base **não chega**.
+- Tarball: `armtix-dinit-20260921.tar.xz` — Termux home or `/data/local/tmp` (auto-download if missing: [armtix-dinit-20260921.tar.xz](https://armtix.artixlinux.org/images/armtix-dinit-20260921.tar.xz))
+- `ksu-module` (SELinux for loop devices)
+- **Termux:X11** app (`com.termux.x11`) — F-Droid or [GitHub nightly](https://github.com/termux/termux-x11/releases). Base Termux alone is **not enough**.
 
 ---
 
-## 1. Enviar scripts (PC)
+## 1. Push scripts (PC)
 
 ```powershell
 cd host
 .\deploy.ps1
 ```
 
-No dispositivo:
+On the device:
 
 ```sh
 adb shell
@@ -33,108 +35,108 @@ sh /data/local/tmp/rootfs/host/prepare.sh
 
 ---
 
-## 2. Módulo SELinux
+## 2. SELinux module
 
-Instala `ksu-module` no KernelSU Manager.
+Install `ksu-module` in KernelSU Manager.
 
-Reinicia o dispositivo. Sem isto o mount pode ficar sem RW.
+Reboot the device. Without this, the mount may not be RW.
 
 ---
 
-## 3. Ambiente do zero (recomendado)
+## 3. Fresh environment (recommended)
 
-Um comando: faz **linux-stop** (estado limpo), instala rootfs (se preciso), sobe o container, aplica stubs dinit, arranca **sshd** como serviço dinit (porta 2222), depois **dbus/elogind**, cria utilizador, XFCE e Termux:X11. **GPU hybris fica de fora** (passo manual depois). No fim corre `linux-status` estrito sem exigir GPU.
+One command: runs **linux-stop** (clean state), installs the rootfs (if needed), starts the container, applies dinit stubs, starts **sshd** as a dinit service (port 2222), then **dbus/elogind**, creates a user, XFCE and Termux:X11. **GPU hybris is skipped** (manual step later). Ends with a strict `linux-status` that does not require GPU.
 
 ```sh
 su
 /data/linux/bootstrap.sh
-# terminal local ou adb com TTY: pergunta criar utilizador (default S)
+# local terminal or adb with TTY: prompts to create a user (default Y)
 ```
 
-Sem TTY (ex. `adb shell` + `su -c`):
+Without TTY (e.g. `adb shell` + `su -c`):
 
 ```sh
-CREATE_USER=1 ARTIX_USER=<user> ARTIX_PASS='senha' /data/linux/bootstrap.sh
-# re-run com user ja em /home: /data/linux/bootstrap.sh basta
+CREATE_USER=1 ARTIX_USER=<user> ARTIX_PASS='password' /data/linux/bootstrap.sh
+# re-run when user already has /home: /data/linux/bootstrap.sh is enough
 ```
 
-O bootstrap usa `SKIP_GPU=1` por defeito (nucleo + XFCE). GPU + desktop:
+Bootstrap defaults to `SKIP_GPU=1` (core + XFCE). GPU + desktop:
 
 ```sh
 /data/linux/gpu-desktop.sh
 ```
 
-Rootfs inconsistente (libs/pacman partidos): **não** há recovery de libs — `YES=1 /data/linux/wipe-chroot.sh && /data/linux/bootstrap.sh`.
+Inconsistent rootfs (broken libs/pacman): there is **no** lib recovery — `YES=1 /data/linux/wipe-chroot.sh && /data/linux/bootstrap.sh`.
 
-Fonte do tarball (ordem):
+Tarball resolution order:
 
-1. argumento / `ARMTIX_TAR`
-2. home Termux: `~/armtix-dinit-20260921.tar.xz`
+1. argument / `ARMTIX_TAR`
+2. Termux home: `~/armtix-dinit-20260921.tar.xz`
 3. `/data/local/tmp/armtix-dinit-20260921.tar.xz`
-4. download para `/data/local/tmp`: https://armtix.artixlinux.org/images/armtix-dinit-20260921.tar.xz
+4. download to `/data/local/tmp`: https://armtix.artixlinux.org/images/armtix-dinit-20260921.tar.xz
 
-Se `.xz` falhar, no Termux: `pkg install xz-utils && xz -dk ~/armtix-dinit-….tar.xz`
+If `.xz` fails, in Termux: `pkg install xz-utils && xz -dk ~/armtix-dinit-….tar.xz`
 
-Queres no status do bootstrap: `[ok]` sshd, dbus, elogind, dbus socket, X11 `:0`.  
-GPU / Zink **não** fazem parte desta fase.
+After bootstrap you want `[ok]` for sshd, dbus, elogind, dbus socket, X11 `:0`.  
+GPU / Zink are **not** part of this phase.
 
 ---
 
-## 3b. GPU no ecrã (recomendado)
+## 3b. On-screen GPU (recommended)
 
-Um comando cobre setup (se falta) + Zink no XFCE + Termux:X11:
+One command covers setup (if missing) + Zink in XFCE + Termux:X11:
 
 ```sh
 /data/linux/gpu-desktop.sh          # start
-/data/linux/gpu-desktop.sh status  # markers + conf
-/data/linux/gpu-desktop.sh stop    # para X11/XFCE
-/data/linux/gpu-desktop.sh cpu     # desktop softGL (CPU)
+/data/linux/gpu-desktop.sh status  # markers + config
+/data/linux/gpu-desktop.sh stop    # stop X11/XFCE
+/data/linux/gpu-desktop.sh cpu     # softGL desktop (CPU)
 ```
 
-- **1ª vez:** corre `run-setup-gpu-hybris` se não houver markers, põe `XFCE_USE_ZINK=1` quando existir `artix-gpu-zink.ok`, sobe o desktop.
-- **Dias seguintes:** o mesmo `gpu-desktop.sh` (só sobe o ecrã; GPU já está no `rootfs.img`).
-- **Boot automático:** só o container (`99-linux.sh`) — GPU/desktop **não** sobem sozinhos.
+- **First time:** runs `run-setup-gpu-hybris` if markers are missing, sets `XFCE_USE_ZINK=1` when `artix-gpu-zink.ok` exists, starts the desktop.
+- **Later days:** same `gpu-desktop.sh` (only brings up the display; GPU is already in `rootfs.img`).
+- **Autostart:** container only (`99-linux.sh`) — GPU/desktop do **not** start on their own.
 
-Setup avançado (sem helper): `/data/linux/run-setup-gpu-hybris.sh`.
+Advanced setup (no helper): `/data/linux/run-setup-gpu-hybris.sh`.
 
 ---
 
-## 4. Passo a passo (avançado)
+## 4. Step by step (advanced)
 
 ```sh
 /data/linux/install-rootfs.sh
 /data/linux/linux-start.sh
-/data/linux/run-setup.sh                      # so nucleo (sshd/dbus/elogind)
-SETUP_FULL=1 SKIP_GPU=1 /data/linux/run-setup.sh  # nucleo + XFCE (sem GPU)
-SETUP_FULL=1 /data/linux/run-setup.sh         # nucleo + GPU hybris + XFCE
+/data/linux/run-setup.sh                      # core only (sshd/dbus/elogind)
+SETUP_FULL=1 SKIP_GPU=1 /data/linux/run-setup.sh  # core + XFCE (no GPU)
+SETUP_FULL=1 /data/linux/run-setup.sh         # core + GPU hybris + XFCE
 /data/linux/x11-start.sh
 STRICT=1 REQUIRE_X11=1 REQUIRE_GPU=0 /data/linux/linux-status.sh
 ```
 
-O `run-setup.sh` reinicia o container após stubs dinit, arranca **sshd** como serviço dinit (porta 2222, passo 4) e só depois **dbus/elogind**. Se o SSH não subir, falha nesse passo. Em TTY (ou `/dev/tty`) pergunta se queres criar o utilizador; com `CREATE_USER=1` / `0` não pergunta. Com `SETUP_FULL=1` sem TTY exige `ARTIX_USER` + `ARTIX_PASS`.
+`run-setup.sh` restarts the container after dinit stubs, starts **sshd** as a dinit service (port 2222, step 4), then **dbus/elogind**. If SSH fails to start, it fails at that step. On a TTY (or `/dev/tty`) it asks whether to create a user; with `CREATE_USER=1` / `0` it does not ask. With `SETUP_FULL=1` and no TTY it requires `ARTIX_USER` + `ARTIX_PASS`.
 
 ---
 
 ## 5. Autostart
 
-O `prepare.sh` (e o `bootstrap.sh` no fim) instalam automaticamente:
+`prepare.sh` (and `bootstrap.sh` at the end) install automatically:
 
-`/data/adb/service.d/99-linux.sh` → sobe o container apos boot (KernelSU late_start + watchdog).
+`/data/adb/service.d/99-linux.sh` → starts the container after boot (KernelSU late_start + watchdog).
 
 ```sh
-# repor / actualizar
+# reinstall / update
 /data/linux/install-autostart.sh
 
-# saltar na preparacao
+# skip during prepare
 SKIP_AUTOSTART=1 sh /data/local/tmp/rootfs/host/prepare.sh
 ```
 
-XFCE/Termux:X11 **nao** sobe no boot — usa `/data/linux/gpu-desktop.sh` (ou `x11-start.sh`).  
-Boot = container; GPU/desktop = sob demanda.
+XFCE/Termux:X11 do **not** start at boot — use `/data/linux/gpu-desktop.sh` (or `x11-start.sh`).  
+Boot = container; GPU/desktop = on demand.
 
 ---
 
-## Como usar correctamente
+## Correct usage
 
 ### Container
 
@@ -143,38 +145,38 @@ Boot = container; GPU/desktop = sob demanda.
 /data/linux/linux-status.sh
 ```
 
-Entra pelos helpers (não faças chroot à mão):
+Enter via helpers (do not chroot by hand):
 
 ```sh
 /data/linux/linux-shell.sh            # root → /root
 /data/linux/linux-shell.sh <user>     # user → /home/<user>
 ```
 
-### Utilizadores
+### Users
 
-No `bootstrap` / `run-setup` (recomendado — pergunta s/N + nome/senha via TTY ou `/dev/tty`):
+In `bootstrap` / `run-setup` (recommended — prompts y/N + name/password via TTY or `/dev/tty`):
 
 ```sh
 /data/linux/bootstrap.sh
-# ou so nucleo:
+# or core only:
 /data/linux/run-setup.sh
-# ou sem prompt:
-CREATE_USER=1 ARTIX_USER=<user> ARTIX_PASS='senha' /data/linux/bootstrap.sh
+# or without prompt:
+CREATE_USER=1 ARTIX_USER=<user> ARTIX_PASS='password' /data/linux/bootstrap.sh
 ```
 
-Ou à mão:
+Or manually:
 
 ```sh
-ARTIX_SUDO=1 /data/linux/artix-user.sh create <user> 'senha'
-/data/linux/artix-user.sh passwd <user> 'nova'
+ARTIX_SUDO=1 /data/linux/artix-user.sh create <user> 'password'
+/data/linux/artix-user.sh passwd <user> 'newpass'
 /data/linux/artix-user.sh sudo <user>
 ```
 
-Home do user: `/home/<user>` (`cd ~`).
+User home: `/home/<user>` (`cd ~`).
 
-`/root` é só do root — `cd root` como utilizador normal falha (normal).
+`/root` is root-only — `cd root` as a normal user fails (expected).
 
-Senhas com especiais: aspas simples ou `passwd <user> -` (stdin).
+Passwords with special characters: single quotes or `passwd <user> -` (stdin).
 
 ### Pacman
 
@@ -184,18 +186,18 @@ Senhas com especiais: aspas simples ou `passwd <user> -` (stdin).
 sudo pacman -Syu
 ```
 
-Pacotes Arch em falta (ex. direnv) — usa **Arch Linux ARM**, não Arch x86:
+Missing Arch packages (e.g. direnv) — use **Arch Linux ARM**, not Arch x86:
 
 ```sh
 /data/linux/enable-archlinuxarm.sh
 sudo pacman -S direnv
 ```
 
-### Serviços dinit (sistema)
+### System dinit services
 
 ```
-/etc/dinit.d/nome
-/etc/dinit.d/boot.d/nome → ../nome
+/etc/dinit.d/name
+/etc/dinit.d/boot.d/name → ../name
 ```
 
 ```sh
@@ -203,65 +205,65 @@ sudo pacman -S direnv
 dinitctl status dinit-test
 ```
 
-No `command =`: **não uses `>`**. Usa um script em ficheiro.
+In `command =`: **do not use `>`**. Use a script file instead.
 
-### dinit de teste (user)
+### User dinit test
 
-O dinit do sistema já corre (`/run/dinitctl`).
+System dinit is already running (`/run/dinitctl`).
 
-Teste isolado:
+Isolated test:
 
 ```sh
 ~/test-dinit-network.sh
 ```
 
-Precisa: `--user --container --cgroup-path /sys/fs/cgroup`, serviço `boot`, sem `>` no command.
+Needs: `--user --container --cgroup-path /sys/fs/cgroup`, a `boot` service, no `>` in command.
 
 ### XFCE + Termux:X11 (GPU)
 
-Desktop no chroot via **Termux:X11** (display `:0`). Sem TigerVNC.
-Default: softGL (CPU). Opcional: `XFCE_USE_ZINK=1` em `/etc/artix-x11.conf` → desktop via **Zink→Vulkan Mali** (requer `/etc/artix-gpu-zink.ok`). Apps GPU avulsas: `gpu-vulkan-run` / `zink-run` / `gpu-run`.
+Desktop in the chroot via **Termux:X11** (display `:0`). No TigerVNC.
+Default: softGL (CPU). Optional: `XFCE_USE_ZINK=1` in `/etc/artix-x11.conf` → desktop via **Zink→Vulkan Mali** (requires `/etc/artix-gpu-zink.ok`). Standalone GPU apps: `gpu-vulkan-run` / `zink-run` / `gpu-run`.
 
-**Pré-requisito:** app Android **Termux:X11** (`com.termux.x11`). O Termux base (`com.termux`) **não chega**.  
-Instalar via F-Droid ou [releases GitHub](https://github.com/termux/termux-x11/releases) (`termux-x11-universal-debug.apk` da tag **nightly**).  
-Companion `loader.apk` (Android 14+): o `prepare.sh` / `x11-start.sh` instala a partir de `/data/linux/termux-x11/`, ou em Termux `pkg i x11-repo && pkg i termux-x11-nightly`.  
-Se faltar o APK, `/data/linux/x11-start.sh` aborta com instruções.  
-Nota: em alguns Android 16 (ex. Motorola), `app_process` pode falhar com `NoClassDefFoundError` — actualizar APK+loader nightly e ver `logcat | grep termux-x11`.
+**Prerequisite:** Android app **Termux:X11** (`com.termux.x11`). Base Termux (`com.termux`) is **not enough**.  
+Install from F-Droid or [GitHub releases](https://github.com/termux/termux-x11/releases) (`termux-x11-universal-debug.apk` from the **nightly** tag).  
+Companion `loader.apk` (Android 14+): `prepare.sh` / `x11-start.sh` install it from `/data/linux/termux-x11/`, or in Termux `pkg i x11-repo && pkg i termux-x11-nightly`.  
+If the APK is missing, `/data/linux/x11-start.sh` aborts with instructions.  
+Note: on some Android 16 devices (e.g. Motorola), `app_process` may fail with `NoClassDefFoundError` — update APK+loader nightly and check `logcat | grep termux-x11`.
 
 ```sh
 /data/linux/fix-pacman-mirrors.sh
 ARTIX_USER=<user> /data/linux/run-setup-xfce.sh
 ```
 
-Dia a dia:
+Day to day:
 
 ```sh
 /data/linux/x11-start.sh    # Termux:X11 CmdEntryPoint + XFCE
-/data/linux/x11-stop.sh     # para só a sessao X11/XFCE
+/data/linux/x11-stop.sh     # stop X11/XFCE session only
 ```
 
-Ecrã: app **Termux:X11** no dispositivo.  
+Display: **Termux:X11** app on the device.  
 Config: `/etc/artix-x11.conf` (`X11_USER`, `X11_DISPLAY`, `XFCE_USE_ZINK`).  
-Sessao: `dinitctl restart xfce-x11` (com X0 já activo).
+Session: `dinitctl restart xfce-x11` (with X0 already active).
 
-Ativar GPU no desktop (recomendado):
+Enable GPU on the desktop (recommended):
 
 ```sh
 /data/linux/gpu-desktop.sh
 ```
 
-Referencia manual (apos `artix-gpu-zink.ok`):
+Manual reference (after `artix-gpu-zink.ok`):
 
 ```sh
-#   XFCE_USE_ZINK=1  em /etc/artix-x11.conf
-# depois:
+#   XFCE_USE_ZINK=1  in /etc/artix-x11.conf
+# then:
 dinitctl restart xfce-x11
-# reverter: /data/linux/gpu-desktop.sh cpu
+# revert: /data/linux/gpu-desktop.sh cpu
 ```
 
-### GPU MediaTek (Moto G86 / Mali-G615 MC2)
+### MediaTek GPU (Moto G86 / Mali-G615 MC2)
 
-Arquitectura (**GLES-first**):
+Architecture (**GLES-first**):
 
 ```text
 mali_kbase → /dev/mali0 → /opt/android-mali (libGLES_mali.so)
@@ -269,55 +271,55 @@ mali_kbase → /dev/mali0 → /opt/android-mali (libGLES_mali.so)
                          → gpu-egl-run
 ```
 
-Display separado: `mediatek-drm` → `/dev/dri/card0` (não confundir com Mali KBase).
+Separate display: `mediatek-drm` → `/dev/dri/card0` (do not confuse with Mali KBase).
 
-**Não existe** `/dev/dri/renderD128` neste dispositivo — **não** criar artificialmente; **não** instalar Panfrost.
+**There is no** `/dev/dri/renderD128` on this device — do **not** create it artificially; do **not** install Panfrost.
 
-`libGLES_mali.so` / `vulkan.mali.so` são **Android/Bionic**. Runtime isolado em `/opt/android-mali` (cópia selectiva). Mounts `/mnt/system|vendor|apex` só para extracção.
+`libGLES_mali.so` / `vulkan.mali.so` are **Android/Bionic**. Isolated runtime under `/opt/android-mali` (selective copy). Mounts `/mnt/system|vendor|apex` are for extraction only.
 
-**deps offline (runtime-only):** `deps/` traz `mesa25-android-mali-*.tar.zst` + `libhybris-opt-arm64.tar.zst` + `libc-hybris.so` (+ opcional `sysvk-opt-arm64.tar.zst`). O `deploy`/`prepare` instala-os em `/data/linux/deps/`; `run-setup-xfce` / `run-setup-gpu-hybris` copiam para o chroot. **Sem makepkg/base-devel** no device — libhybris e Mesa vêm pré-compilados. `android-vulkan-bridge.tar.gz` é legado e não é usado no fluxo actual.
+**Offline deps (runtime-only):** `deps/` ships `mesa25-android-mali-*.tar.zst` + `libhybris-opt-arm64.tar.zst` + `libc-hybris.so` (+ optional `sysvk-opt-arm64.tar.zst`). `deploy`/`prepare` install them under `/data/linux/deps/`; `run-setup-xfce` / `run-setup-gpu-hybris` copy them into the chroot. **No makepkg/base-devel** on the device — libhybris and Mesa are prebuilt. `android-vulkan-bridge.tar.gz` is legacy and unused in the current flow.
 
 ```sh
 /data/linux/linux-start.sh
-/data/linux/run-setup-gpu-hybris.sh  # GLES + /opt; Vulkan apos gles.ok
-/data/linux/gpu-check.sh             # PASS precoce = GLES Mali
+/data/linux/run-setup-gpu-hybris.sh  # GLES + /opt; Vulkan after gles.ok
+/data/linux/gpu-check.sh             # early PASS = GLES Mali
 
-# se pacman partido: wipe + bootstrap (sem patches de libs)
+# if pacman is broken: wipe + bootstrap (no lib patches)
 # YES=1 /data/linux/wipe-chroot.sh && /data/linux/bootstrap.sh
 ```
 
-Marcadores:
+Markers:
 
-| Ficheiro | Significado |
-|----------|-------------|
-| `/etc/artix-gpu-gles.ok` | GLES/EGL Mali funcional |
+| File | Meaning |
+|------|---------|
+| `/etc/artix-gpu-gles.ok` | GLES/EGL Mali working |
 | `/etc/artix-gpu-hybris.ok` | GLES + Vulkan + WSI |
-| `/etc/artix-gpu-zink.ok` | Zink (OpenGL→Vulkan Mali) validado |
-| `/etc/artix-mesa25.ok` | Mesa 25.1.2 overlay em `/opt/android-mali` |
-| `/etc/artix-libhybris.ok` | libhybris-opt overlay em `/opt/libhybris` |
+| `/etc/artix-gpu-zink.ok` | Zink (OpenGL→Vulkan Mali) validated |
+| `/etc/artix-mesa25.ok` | Mesa 25.1.2 overlay in `/opt/android-mali` |
+| `/etc/artix-libhybris.ok` | libhybris-opt overlay in `/opt/libhybris` |
 | `/etc/artix-sysvk.ok` | sysvk-opt overlay (Vulkan) |
 
 ```sh
 gpu-egl-run /tmp/mali-egl-test     # GLES
-DISPLAY=:0 gpu-egl-run …           # X11 controlado (nao no startxfce4)
-DISPLAY=:0 gpu-vulkan-run vkcube   # apos hybris.ok; vulkaninfo por ultimo
+DISPLAY=:0 gpu-egl-run …           # controlled X11 (not inside startxfce4)
+DISPLAY=:0 gpu-vulkan-run vkcube   # after hybris.ok; vulkaninfo last
 ```
 
-**Modelo bootstrap / SETUP_FULL:**
+**Bootstrap / SETUP_FULL model:**
 
-| Camada | Driver |
-|--------|--------|
-| Desktop XFCE (default) | software (`LIBGL_ALWAYS_SOFTWARE` / softpipe) |
-| Desktop XFCE (`XFCE_USE_ZINK=1` + `artix-gpu-zink.ok`) | Zink → Vulkan Mali (`zink-run startxfce4`) |
-| Apps GLES | `gpu-egl-run` → Mali |
-| Apps Vulkan | `gpu-vulkan-run` → Mali (apos Fase F) |
-| Apps OpenGL/Zink | `zink-run` / `gpu-run` |
+| Layer | Driver |
+|-------|--------|
+| XFCE desktop (default) | software (`LIBGL_ALWAYS_SOFTWARE` / softpipe) |
+| XFCE desktop (`XFCE_USE_ZINK=1` + `artix-gpu-zink.ok`) | Zink → Vulkan Mali (`zink-run startxfce4`) |
+| GLES apps | `gpu-egl-run` → Mali |
+| Vulkan apps | `gpu-vulkan-run` → Mali (after Phase F) |
+| OpenGL/Zink apps | `zink-run` / `gpu-run` |
 
-`STRICT=1` considera **GPU OK** com `artix-gpu-gles.ok` (GLES Mali). Vulkan/Zink não são requisito do gate precoce.
+`STRICT=1` treats **GPU OK** with `artix-gpu-gles.ok` (GLES Mali). Vulkan/Zink are not required for the early gate.
 
-`setup-gpu-mediatek.sh` é **LEGACY** — não usar no bootstrap.
+`setup-gpu-mediatek.sh` is **LEGACY** — do not use it in bootstrap.
 
-SELinux a bloquear GPU:
+SELinux blocking GPU:
 
 ```sh
 dmesg | grep -iE 'avc|mali|gpu'
@@ -325,38 +327,38 @@ dmesg | grep -iE 'avc|mali|gpu'
 
 ---
 
-## Comandos do dia a dia
+## Day-to-day commands
 
-| Quero… | Comando |
-|--------|---------|
-| Ambiente do zero | `/data/linux/bootstrap.sh` |
-| Ver estado | `/data/linux/linux-status.sh` (inclui GPU OK + driver) |
-| Gate estrito | `STRICT=1 REQUIRE_X11=1 /data/linux/linux-status.sh` |
-| Ligar | `/data/linux/linux-start.sh` |
-| Desligar | `/data/linux/linux-stop.sh` |
-| Wipe chroot + scripts do projecto | `YES=1 /data/linux/wipe-chroot.sh` (apaga `/data/linux/*` e `99-linux.sh`; Android intacto) |
+| I want to… | Command |
+|------------|---------|
+| Fresh environment | `/data/linux/bootstrap.sh` |
+| Check status | `/data/linux/linux-status.sh` (includes GPU OK + driver) |
+| Strict gate | `STRICT=1 REQUIRE_X11=1 /data/linux/linux-status.sh` |
+| Start | `/data/linux/linux-start.sh` |
+| Stop | `/data/linux/linux-stop.sh` |
+| Wipe chroot + project scripts | `YES=1 /data/linux/wipe-chroot.sh` (deletes `/data/linux/*` and `99-linux.sh`; Android untouched) |
 | Shell (root) | `/data/linux/linux-shell.sh` |
-| Shell (user) | `/data/linux/linux-shell.sh nome` |
-| Criar user | `/data/linux/artix-user.sh create nome senha` |
-| Criar user no setup | `CREATE_USER=1 ARTIX_USER=nome ARTIX_PASS='senha' /data/linux/run-setup.sh` |
-| Senha user | `/data/linux/artix-user.sh passwd nome senha` |
-| Dar sudo | `/data/linux/artix-user.sh sudo nome` |
-| Remover user | `/data/linux/artix-user.sh remove nome` |
-| Mirrors ARMtix | `/data/linux/fix-pacman-mirrors.sh` |
-| Repo ALARM | `/data/linux/enable-archlinuxarm.sh` |
-| Setup XFCE/X11 | `ARTIX_USER=<user> /data/linux/run-setup-xfce.sh` |
-| Ligar Termux:X11 + XFCE | `/data/linux/x11-start.sh` |
-| Desktop GPU (Zink) | `/data/linux/gpu-desktop.sh` |
-| Desktop CPU (softGL) | `/data/linux/gpu-desktop.sh cpu` |
-| Parar X11/XFCE | `/data/linux/gpu-desktop.sh stop` ou `x11-stop.sh` |
-| Setup GPU MTK (**LEGACY** — nao usar) | `/data/linux/run-setup-gpu-mediatek.sh` |
-| Setup GPU hybris (GLES-first) | `/data/linux/run-setup-gpu-hybris.sh` |
-| Check GPU | `/data/linux/gpu-check.sh` / `gpu-desktop.sh status` |
+| Shell (user) | `/data/linux/linux-shell.sh name` |
+| Create user | `/data/linux/artix-user.sh create name password` |
+| Create user during setup | `CREATE_USER=1 ARTIX_USER=name ARTIX_PASS='password' /data/linux/run-setup.sh` |
+| Set password | `/data/linux/artix-user.sh passwd name password` |
+| Grant sudo | `/data/linux/artix-user.sh sudo name` |
+| Remove user | `/data/linux/artix-user.sh remove name` |
+| ARMtix mirrors | `/data/linux/fix-pacman-mirrors.sh` |
+| ALARM repo | `/data/linux/enable-archlinuxarm.sh` |
+| XFCE/X11 setup | `ARTIX_USER=<user> /data/linux/run-setup-xfce.sh` |
+| Start Termux:X11 + XFCE | `/data/linux/x11-start.sh` |
+| GPU desktop (Zink) | `/data/linux/gpu-desktop.sh` |
+| CPU desktop (softGL) | `/data/linux/gpu-desktop.sh cpu` |
+| Stop X11/XFCE | `/data/linux/gpu-desktop.sh stop` or `x11-stop.sh` |
+| MTK GPU setup (**LEGACY** — do not use) | `/data/linux/run-setup-gpu-mediatek.sh` |
+| Hybris GPU setup (GLES-first) | `/data/linux/run-setup-gpu-hybris.sh` |
+| GPU check | `/data/linux/gpu-check.sh` / `gpu-desktop.sh status` |
 | GLES Mali | `gpu-egl-run /tmp/mali-egl-test` |
 | Vulkan Mali (X11) | `DISPLAY=:0 gpu-vulkan-run vkcube` |
 | Log | `cat /data/linux/boot.log` |
 | SSH | `ssh -p 2222 user@<ip>` |
-| Desktop | app Termux:X11 (DISPLAY `:0`) |
+| Desktop | Termux:X11 app (DISPLAY `:0`) |
 
 ---
 
@@ -364,75 +366,75 @@ dmesg | grep -iE 'avc|mali|gpu'
 
 ### Scripts: `unexpected do` / `not found`
 
-CRLF do Windows. No device:
+Windows CRLF. On the device:
 
 ```sh
 CR=$(printf '\r')
 for f in /data/linux/*.sh; do tr -d "$CR" < "$f" > "$f.n" && mv "$f.n" "$f"; done
 ```
 
-Nunca `sed 's/\r//'`: no BusyBox Android apaga a **letra** `r`  
+Never use `sed 's/\r//'`: on Android BusyBox it deletes the **letter** `r`  
 (`Never`→`Neve`, `run`→`un`).
 
-No PC o `deploy.ps1` já força LF.
+On the PC, `deploy.ps1` already forces LF.
 
 ---
 
-### `unshare` morre / `[FAILED] boot` / udev / modules / fsck
+### `unshare` dies / `[FAILED] boot` / udev / modules / fsck
 
-O dinit tenta early-boot de máquina real. No chroot Android isso falha e o init sai.
+dinit tries real-machine early-boot. Inside an Android chroot that fails and init exits.
 
 ```sh
 /data/linux/linux-stop.sh
 rmdir /data/linux/run/start.lock 2>/dev/null
-# atualizar scripts (prepare) e:
+# refresh scripts (prepare) then:
 /data/linux/fix-dinit-chroot.sh
 /data/linux/linux-start.sh
 /data/linux/linux-status.sh
 ```
 
-O fix stubba udev/modules/fsck/cgroups/getty/… para `/bin/true`.
+The fix stubs udev/modules/fsck/cgroups/getty/… to `/bin/true`.
 
 ---
 
 ### `libgcc_s.so.1` / `libstdc++.so.6` — shared library not found
 
-No Arch/ARMtix actual, `gcc-libs` é **meta**; as libs vêm de `libgcc` + `libstdc++`.  
-Se só se fizer `pacman -S gcc-libs`, o meta pode remover as `.so` antigas sem instalar `libgcc`.
+On current Arch/ARMtix, `gcc-libs` is a **meta** package; the libs come from `libgcc` + `libstdc++`.  
+If you only run `pacman -S gcc-libs`, the meta may remove old `.so` files without installing `libgcc`.
 
-**Reparar sem wipe** (host Android / busybox — usa cache pacman `.pkg.tar.xz` ou tarball Artix):
+**Repair without wipe** (Android host / busybox — uses pacman cache `.pkg.tar.xz` or Artix tarball):
 
 ```sh
 su -c /data/linux/repair-libgcc.sh
 /data/linux/run-setup-gpu-hybris.sh
 ```
 
-Causa típica: `pacman -Sy gcc-libs` (meta) removeu `/usr/lib/libgcc_s.so.1` sem instalar o pacote `libgcc`. O repair extrai `libgcc-*.pkg.tar.xz` do cache em `/var/cache/pacman/pkg/`.
+Typical cause: `pacman -Sy gcc-libs` (meta) removed `/usr/lib/libgcc_s.so.1` without installing the `libgcc` package. Repair extracts `libgcc-*.pkg.tar.xz` from the cache in `/var/cache/pacman/pkg/`.
 
-O setup GPU instala `libgcc libstdc++ gcc-libs` na mesma transação e usa `pacman -Sy --needed` (não `-Syu`) + `IgnorePkg` de kernels/mkinitcpio.
+GPU setup installs `libgcc libstdc++ gcc-libs` in one transaction and uses `pacman -Sy --needed` (not `-Syu`) + `IgnorePkg` for kernels/mkinitcpio.
 
 ---
 
 ### `unshare(0x20020000): Invalid argument`
 
-Kernel sem PID namespace. Normal.
+Kernel without PID namespace. Expected.
 
-O start faz fallback para mount-only.  
-`linux-status.sh` pode mostrar `unshare -m -p: FALHA` e mesmo assim VIVO.
+Start falls back to mount-only.  
+`linux-status.sh` may show `unshare -m -p: FAIL` while still ALIVE.
 
 ---
 
 ### `nsenter: can't open .../ns/pid`
 
-Script antigo. Corre `prepare.sh` de novo (versão actual usa só `-m`).
+Old script. Run `prepare.sh` again (current version uses `-m` only).
 
 ---
 
-### Mount sem RW / loop `Invalid argument`
+### Mount not RW / loop `Invalid argument`
 
-1. Módulo `artix_chroot_loop` + reboot  
-2. `.img` em `/data/linux/` (não `/sdcard`)  
-3. Status com `RW: ok`, sem `nosuid`/`nodev`
+1. `artix_chroot_loop` module + reboot  
+2. `.img` under `/data/linux/` (not `/sdcard`)  
+3. Status shows `RW: ok`, without `nosuid`/`nodev`
 
 ```sh
 dmesg | grep -iE 'avc|ext4|loop'
@@ -443,7 +445,7 @@ dmesg | grep -iE 'avc|ext4|loop'
 
 ### pacman: Landlock / sandbox / CheckSpace / kernel
 
-Em `[options]` (aplicado por `setup-artix` / `fix-pacman-sandbox`):
+In `[options]` (applied by `setup-artix` / `fix-pacman-sandbox`):
 
 ```
 DisableSandbox
@@ -451,10 +453,10 @@ DisableSandbox
 IgnorePkg = linux-aarch64 linux-aarch64-lts linux-aarch64-headers linux-firmware mkinitcpio mkinitcpio-busybox
 ```
 
-Sem `DownloadUser` (o user `alpm` falha no chroot Android; não forçar `root` — remover a linha).  
-`CheckSpace` falha em `/data` por permissões.  
-`IgnorePkg` evita actualizar kernel/firmware/mkinitcpio de PC (o chroot partilha o kernel do telefone).  
-O setup GPU usa `pacman -Sy --needed` (não `-Syu`) e instala `libgcc` + `libstdc++` (não só o meta `gcc-libs`).
+No `DownloadUser` (`alpm` fails in Android chroot; do not force `root` — remove the line).  
+`CheckSpace` fails on `/data` due to permissions.  
+`IgnorePkg` avoids updating PC kernel/firmware/mkinitcpio (the chroot shares the phone kernel).  
+GPU setup uses `pacman -Sy --needed` (not `-Syu`) and installs `libgcc` + `libstdc++` (not only the `gcc-libs` meta).
 
 ```sh
 /data/linux/fix-pacman-sandbox.sh
@@ -462,9 +464,9 @@ O setup GPU usa `pacman -Sy --needed` (não `-Syu`) e instala `libgcc` + `libstd
 
 ---
 
-### pacman: 404 / TLS / mirrors mortos
+### pacman: 404 / TLS / dead mirrors
 
-Mirrors eram Artix x86. ARMtix:
+Mirrors were Artix x86. ARMtix:
 
 ```
 https://armtix.artixlinux.org/repos/$repo/os/$arch
@@ -478,9 +480,9 @@ sudo pacman -Syy
 
 ---
 
-### `SigLevel = Neve` inválido
+### Invalid `SigLevel = Neve`
 
-Bug do `sed \r` (apagou o `r` de Never).
+`sed \r` bug (deleted the `r` from Never).
 
 ```sh
 sed -i 's/SigLevel = Neve$/SigLevel = Never/g' /etc/pacman.conf
@@ -491,7 +493,7 @@ sed -i 's/SigLevel = Neve$/SigLevel = Never/g' /etc/pacman.conf
 
 ### `direnv` not found
 
-Não está no ARMtix. Está no ALARM `[extra]`.
+Not in ARMtix. Available in ALARM `[extra]`.
 
 ```sh
 /data/linux/enable-archlinuxarm.sh
@@ -502,34 +504,34 @@ sudo pacman -S direnv
 echo 'eval "$(direnv hook bash)"' >> ~/.bashrc
 ```
 
-Não uses `artix-archlinux-support` (Arch x86).
+Do not use `artix-archlinux-support` (Arch x86).
 
 ---
 
-### Senha não funciona (SSH / login)
+### Password does not work (SSH / login)
 
 ```sh
-/data/linux/artix-user.sh passwd <user> 'senha'
+/data/linux/artix-user.sh passwd <user> 'password'
 ```
 
-SSH na porta **2222**.  
-`linux-shell.sh <user>` não pede senha (és root no Android).
+SSH on port **2222**.  
+`linux-shell.sh <user>` does not ask for a password (you are root on Android).
 
 ---
 
 ### `not in the sudoers file`
 
 ```sh
-/data/linux/artix-user.sh sudo usuário
+/data/linux/artix-user.sh sudo username
 ```
 
-Ou cria com `ARTIX_SUDO=1`. Sai e volta a entrar.
+Or create with `ARTIX_SUDO=1`. Log out and back in.
 
 ---
 
 ### `cd root` → permission denied
 
-Normal. `/root` = home do root.
+Expected. `/root` is root's home.
 
 ```sh
 cd ~
@@ -540,86 +542,86 @@ cd ~
 
 ### dbus / elogind / logind failed (cgroup)
 
-Causa: `run-in-cgroup = dbus.sv` — o cgroup do Android/chroot não deixa criar.
+Cause: `run-in-cgroup = dbus.sv` — the Android/chroot cgroup cannot create it.
 
-Corrigir (já no `run-setup.sh`; reaplicar se o pacman sobrescrever):
+Fix (already in `run-setup.sh`; reapply if pacman overwrites):
 
 ```sh
 /data/linux/run-setup.sh
-# ou so os fixes:
+# or just the fixes:
 /data/linux/fix-dbus-chroot.sh
 dinitctl status dbus elogind logind
 ```
 
-Deve ficar STARTED e existir `/run/dbus/system_bus_socket`.
+Should be STARTED with `/run/dbus/system_bus_socket` present.
 
 ---
 
-### dinit teste: cgroup / boot / socket
+### dinit test: cgroup / boot / socket
 
-| Erro | Solução |
-|------|---------|
+| Error | Fix |
+|-------|-----|
 | `In multiple cgroups` | `--user --container --cgroup-path /sys/fs/cgroup` |
-| `boot: could not find` | cria serviço `boot` no services-dir |
-| exit 2 / state vazio | sem `>` no `command=`; usa script `.sh` |
-| socket não criado | flags acima + `boot` + vê o log |
+| `boot: could not find` | create a `boot` service in the services-dir |
+| exit 2 / empty state | no `>` in `command=`; use a `.sh` script |
+| socket not created | flags above + `boot` + check the log |
 
 ```sh
 ~/test-dinit-network.sh
 ```
 
-O dinit do **sistema** já usa `/run/dinitctl`.  
-Testes usam outro `--socket-path`.
+**System** dinit already uses `/run/dinitctl`.  
+Tests use a different `--socket-path`.
 
 ---
 
-### XFCE / Termux:X11 nao arranca
+### XFCE / Termux:X11 will not start
 
 ```sh
-pm path com.termux.x11          # tem de listar o APK
+pm path com.termux.x11          # must list the APK
 /data/linux/x11-start.sh
 dinitctl status xfce-x11 dbus
 cat /var/log/dinit/xfce-x11.log
-ls -l /tmp/.X11-unix/           # dentro do chroot: X0
+ls -l /tmp/.X11-unix/           # inside chroot: X0
 cat /etc/artix-x11.conf
 ```
 
-Causas tipicas:
+Typical causes:
 
-| Sintoma | Causa / fix |
+| Symptom | Cause / fix |
 |---------|-------------|
-| `falta a app Termux:X11` | Instalar APK `com.termux.x11` (F-Droid/GitHub); Termux base nao chega |
-| `socket X11 nao apareceu` | Abrir a app Termux:X11; confirmar `setenforce 0`; TMPDIR no mount ns |
-| `Cannot open display :0` | CmdEntryPoint fora do mount ns — usa `/data/linux/x11-start.sh` |
-| xfce-x11 STOPPED | `/data/linux/x11-start.sh` (X0 tem de existir antes da sessao) |
-| ecran preto (app aberta) | compositor xfwm4 + softGL — `x11-stop` + `x11-start` (force `use_compositing=false`) |
+| `falta a app Termux:X11` | Install APK `com.termux.x11` (F-Droid/GitHub); base Termux is not enough |
+| `socket X11 nao apareceu` | Open the Termux:X11 app; confirm `setenforce 0`; TMPDIR in the mount ns |
+| `Cannot open display :0` | CmdEntryPoint outside the mount ns — use `/data/linux/x11-start.sh` |
+| xfce-x11 STOPPED | `/data/linux/x11-start.sh` (X0 must exist before the session) |
+| black screen (app open) | xfwm4 compositor + softGL — `x11-stop` + `x11-start` (force `use_compositing=false`) |
 
-Tela preta com socket/sessao OK:
+Black screen with socket/session OK:
 
 ```sh
 /data/linux/x11-stop.sh
-# opcional: reaplicar prefs
+# optional: reapply prefs
 ARTIX_USER=<user> /data/linux/run-setup-xfce.sh
 /data/linux/x11-start.sh
 ```
 
-Reinstalar setup: `ARTIX_USER=<user> /data/linux/run-setup-xfce.sh`  
-Depois: `/data/linux/x11-start.sh` → ecran na app Termux:X11.
+Reinstall setup: `ARTIX_USER=<user> /data/linux/run-setup-xfce.sh`  
+Then: `/data/linux/x11-start.sh` → display in the Termux:X11 app.
 
 ---
 
-### GPU: llvmpipe / softpipe / sem Mali / invalid ELF header / free(): invalid size
+### GPU: llvmpipe / softpipe / no Mali / invalid ELF header / free(): invalid size
 
-llvmpipe/softpipe no **desktop XFCE** é o default (`XFCE_USE_ZINK=0`) — sessão estável com Mesa **25.1.2** sob `/opt/android-mali`.  
-Com `XFCE_USE_ZINK=1` + `/etc/artix-gpu-zink.ok`, o desktop arranca via `zink-run` (OpenGL→Vulkan Mali). Sem marker/zink-run, a sessão faz **fallback automatico** para softGL.
+llvmpipe/softpipe on the **XFCE desktop** is the default (`XFCE_USE_ZINK=0`) — stable session with Mesa **25.1.2** under `/opt/android-mali`.  
+With `XFCE_USE_ZINK=1` + `/etc/artix-gpu-zink.ok`, the desktop starts via `zink-run` (OpenGL→Vulkan Mali). Without marker/zink-run, the session **falls back automatically** to softGL.
 
-GPU Mali directa: `gpu-egl-run` + `/etc/artix-gpu-gles.ok` / `gpu-check.sh` PASS.
+Direct Mali GPU: `gpu-egl-run` + `/etc/artix-gpu-gles.ok` / `gpu-check.sh` PASS.
 
-`invalid ELF header` / `Found no drivers` = ICD Bionic no glibc sem hybris — use `run-setup-gpu-hybris.sh` (não o mediatek legado).
+`invalid ELF header` / `Found no drivers` = Bionic ICD on glibc without hybris — use `run-setup-gpu-hybris.sh` (not legacy mediatek).
 
-`free(): invalid size` / `invalid pointer` no Mesa ≥26 (pacman Artix) — conhecido com softGL e Zink+hybris. O bootstrap/`setup-xfce` instala o overlay `mesa25-android-mali` e remove mesa≥26. Zink no desktop é opt-in (`XFCE_USE_ZINK`).
+`free(): invalid size` / `invalid pointer` on Mesa ≥26 (Artix pacman) — known with softGL and Zink+hybris. Bootstrap/`setup-xfce` installs the `mesa25-android-mali` overlay and removes mesa≥26. Zink on the desktop is opt-in (`XFCE_USE_ZINK`).
 
-`GLIBC_2.43 not found` (ex. `liblcms2` / `xfce4-session`): o bootstrap/`setup-artix` e o `setup-xfce` fazem `pacman -Sy glibc` cedo. Sem wipe, no chroot vivo:
+`GLIBC_2.43 not found` (e.g. `liblcms2` / `xfce4-session`): bootstrap/`setup-artix` and `setup-xfce` run `pacman -Sy glibc` early. Without wipe, on a live chroot:
 
 ```sh
 SHELL_CMD='pacman -Sy --noconfirm glibc' /data/linux/linux-shell.sh
@@ -627,7 +629,7 @@ SHELL_CMD='pacman -Sy --noconfirm glibc' /data/linux/linux-shell.sh
 /data/linux/x11-start.sh
 ```
 
-`ngtcp2_…` / pacman partido = rootfs inconsistente — **wipe + bootstrap** (sem patches de libs):
+`ngtcp2_…` / broken pacman = inconsistent rootfs — **wipe + bootstrap** (no lib patches):
 
 ```sh
 YES=1 /data/linux/wipe-chroot.sh
@@ -640,12 +642,12 @@ YES=1 /data/linux/wipe-chroot.sh
 /data/linux/run-setup-gpu-hybris.sh
 /data/linux/gpu-check.sh
 gpu-egl-run /tmp/mali-egl-test
-DISPLAY=:0 gpu-vulkan-run vkcube   # apos artix-gpu-hybris.ok
+DISPLAY=:0 gpu-vulkan-run vkcube   # after artix-gpu-hybris.ok
 ```
 
 ---
 
-### Container morto / pidfile obsoleto
+### Dead container / stale pidfile
 
 ```sh
 /data/linux/linux-stop.sh
@@ -657,16 +659,16 @@ cat /data/linux/boot.log
 
 ## Paths
 
-| Path | O quê |
-|------|--------|
-| `/data/linux/rootfs.img` | disco Linux (8G esparso) |
-| `/data/linux/mnt` | montagem |
-| `/data/linux/boot.log` | log de boot |
-| `/data/linux/run/init.pid` | PID do container |
-| `/home/<user>` | home do user (não `/root`) |
-| `/etc/dinit.d/` + `boot.d/` | serviços sistema |
-| `/etc/artix-x11.conf` | user/display Termux:X11 |
-| `/etc/artix-gpu.conf` | paths ICD Vulkan / vendor |
-| `/mnt/vendor` `/mnt/system` | binds RO Android (GPU ICD) |
-| `/etc/pacman.d/mirrorlist` | mirrors ARMtix |
-| `/etc/pacman.d/mirrorlist-archarm` | mirrors Arch Linux ARM |
+| Path | What |
+|------|------|
+| `/data/linux/rootfs.img` | Linux disk (8G sparse) |
+| `/data/linux/mnt` | mount point |
+| `/data/linux/boot.log` | boot log |
+| `/data/linux/run/init.pid` | container PID |
+| `/home/<user>` | user home (not `/root`) |
+| `/etc/dinit.d/` + `boot.d/` | system services |
+| `/etc/artix-x11.conf` | Termux:X11 user/display |
+| `/etc/artix-gpu.conf` | Vulkan ICD / vendor paths |
+| `/mnt/vendor` `/mnt/system` | RO Android binds (GPU ICD) |
+| `/etc/pacman.d/mirrorlist` | ARMtix mirrors |
+| `/etc/pacman.d/mirrorlist-archarm` | Arch Linux ARM mirrors |
