@@ -17,7 +17,9 @@
 
 CACHE_HOST="$BASE/cache/repair-libgcc"
 TERMUX_HOME=/data/data/com.termux/files/home
-DEFAULT_TAR="$TERMUX_HOME/armtix-dinit-20260124.tar.xz"
+TMP_DIR=/data/local/tmp
+TAR_NAME=armtix-dinit-20260921.tar.xz
+DEFAULT_TAR="$TERMUX_HOME/$TAR_NAME"
 VER_FALLBACK="16.2.1+r23+gd564253eb6c8-1"
 
 MIRRORS="
@@ -118,8 +120,16 @@ find_armtix_tar() {
   if [ -n "${ARMTIX_TAR:-}" ] && [ -f "$ARMTIX_TAR" ]; then
     echo "$ARMTIX_TAR"; return 0
   fi
-  [ -f "$DEFAULT_TAR" ] && { echo "$DEFAULT_TAR"; return 0; }
-  hit=$(ls -1 "$TERMUX_HOME"/armtix-dinit-*.tar.xz 2>/dev/null | head -n1) || true
+  for cand in \
+    "$TERMUX_HOME/$TAR_NAME" \
+    "$TMP_DIR/$TAR_NAME" \
+    "$DEFAULT_TAR"
+  do
+    [ -f "$cand" ] && { echo "$cand"; return 0; }
+  done
+  hit=$(ls -1 "$TERMUX_HOME"/armtix-dinit-*.tar.xz 2>/dev/null | sort | tail -n1) || true
+  [ -n "$hit" ] && [ -f "$hit" ] && { echo "$hit"; return 0; }
+  hit=$(ls -1 "$TMP_DIR"/armtix-dinit-*.tar.xz 2>/dev/null | sort | tail -n1) || true
   [ -n "$hit" ] && [ -f "$hit" ] && { echo "$hit"; return 0; }
   return 1
 }

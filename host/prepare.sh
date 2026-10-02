@@ -161,7 +161,8 @@ elif [ "${SKIP_AUTOSTART:-0}" = 1 ]; then
   echo " -- autostart saltado (SKIP_AUTOSTART=1)"
 fi
 
-TAR_DEFAULT=/data/data/com.termux/files/home/armtix-dinit-20260124.tar.xz
+TAR_DEFAULT=/data/local/tmp/armtix-dinit-20260921.tar.xz
+TAR_URL=https://armtix.artixlinux.org/images/armtix-dinit-20260921.tar.xz
 echo
 echo "============================================================"
 echo " Scripts em $DST"
@@ -176,7 +177,8 @@ echo "      # install + start + dbus/elogind + user + XFCE + X11"
 echo "      # terminal: pergunta criar utilizador (default S)"
 echo "      # adb sem TTY:"
 echo "      CREATE_USER=1 ARTIX_USER=<user> ARTIX_PASS='senha' /data/linux/bootstrap.sh"
-echo "      # tarball padrao: $TAR_DEFAULT"
+echo "      # tarball: home Termux ou $TAR_DEFAULT"
+echo "      # se faltar: download automatico de $TAR_URL"
 echo " 3) Alternativa passo-a-passo:"
 echo "      /data/linux/install-rootfs.sh"
 echo "      /data/linux/linux-start.sh"

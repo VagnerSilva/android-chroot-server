@@ -2,8 +2,11 @@
 # ============================================================
 # install-rootfs.sh — cria ext4 e extrai o tarball Artix/dinit
 #
-# Padrao (home Termux):
-#   /data/data/com.termux/files/home/armtix-dinit-20260124.tar.xz
+# Procura (nesta ordem):
+#   1) argumento / ARMTIX_TAR
+#   2) home Termux: ~/armtix-dinit-20260921.tar.xz (ou armtix-dinit-*.tar.xz)
+#   3) /data/local/tmp/armtix-dinit-20260921.tar.xz (ou armtix-dinit-*.tar.xz)
+#   4) download → /data/local/tmp/armtix-dinit-20260921.tar.xz
 #
 # su -c "/data/linux/install-rootfs.sh"
 # su -c "/data/linux/install-rootfs.sh /caminho/arquivo.tar.xz"
@@ -14,16 +17,93 @@ set -e
 . /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh"
 
 TERMUX_HOME=/data/data/com.termux/files/home
-DEFAULT_TAR="$TERMUX_HOME/armtix-dinit-20260124.tar.xz"
-TARBALL="${1:-$DEFAULT_TAR}"
+TMP_DIR=/data/local/tmp
+TAR_NAME=armtix-dinit-20260921.tar.xz
+TAR_URL="https://armtix.artixlinux.org/images/$TAR_NAME"
 SIZE_GB="${SIZE_GB:-8}"
 
-if [ ! -f "$TARBALL" ]; then
+find_downloader() {
+  for c in /system/bin/curl /system/bin/wget; do
+    [ -x "$c" ] && { echo "$c"; return 0; }
+  done
+  command -v curl 2>/dev/null && return 0
+  command -v wget 2>/dev/null && return 0
+  # busybox wget (KSU/Magisk)
+  if "$BB" wget --help >/dev/null 2>&1; then
+    echo "$BB wget"
+    return 0
+  fi
+  return 1
+}
+
+download_tarball() {
+  out="$1"
+  dl=$(find_downloader) || {
+    echo "!! sem curl/wget para baixar $TAR_URL"
+    return 1
+  }
+  echo ">> download: $TAR_URL"
+  echo "   destino: $out"
+  case "$dl" in
+    *curl)
+      "$dl" -fL --retry 3 --connect-timeout 30 -o "$out.partial" "$TAR_URL" || {
+        rm -f "$out.partial"; return 1
+      }
+      ;;
+    *wget)
+      # $dl pode ser "busybox wget" (duas palavras)
+      # shellcheck disable=SC2086
+      $dl -O "$out.partial" "$TAR_URL" || {
+        rm -f "$out.partial"; return 1
+      }
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+  mv -f "$out.partial" "$out"
+}
+
+# Primeiro tarball armtix-dinit-*.tar.xz numa pasta (mais recente por nome)
+pick_armtix_in_dir() {
+  dir="$1"
+  [ -d "$dir" ] || return 1
+  hit=$(ls -1 "$dir"/armtix-dinit-*.tar.xz 2>/dev/null | sort | tail -n1) || true
+  [ -n "$hit" ] && [ -f "$hit" ] && { echo "$hit"; return 0; }
+  return 1
+}
+
+resolve_tarball() {
+  if [ -n "${1:-}" ]; then
+    echo "$1"; return 0
+  fi
+  if [ -n "${ARMTIX_TAR:-}" ] && [ -f "$ARMTIX_TAR" ]; then
+    echo "$ARMTIX_TAR"; return 0
+  fi
+  for cand in \
+    "$TERMUX_HOME/$TAR_NAME" \
+    "$TMP_DIR/$TAR_NAME"
+  do
+    [ -f "$cand" ] && { echo "$cand"; return 0; }
+  done
+  hit=$(pick_armtix_in_dir "$TERMUX_HOME") && { echo "$hit"; return 0; }
+  hit=$(pick_armtix_in_dir "$TMP_DIR") && { echo "$hit"; return 0; }
+
+  dest="$TMP_DIR/$TAR_NAME"
+  download_tarball "$dest" || return 1
+  echo "$dest"
+}
+
+TARBALL=$(resolve_tarball "${1:-}") || true
+if [ -z "$TARBALL" ] || [ ! -f "$TARBALL" ]; then
   echo "uso: $0 [rootfs.tar|tar.gz|tar.xz]"
-  echo "padrao: $DEFAULT_TAR"
+  echo "padrao: $TERMUX_HOME/$TAR_NAME ou $TMP_DIR/$TAR_NAME"
+  echo "url:    $TAR_URL"
   echo
   echo "procurando em $TERMUX_HOME:"
   ls -lh "$TERMUX_HOME"/*.tar* 2>/dev/null || echo "  (nenhum)"
+  echo "procurando em $TMP_DIR:"
+  ls -lh "$TMP_DIR"/armtix-dinit-*.tar* 2>/dev/null || echo "  (nenhum)"
   echo "procurando em /sdcard/Download:"
   ls -lh /sdcard/Download/*.tar* 2>/dev/null || echo "  (nenhum)"
   exit 1
@@ -68,8 +148,8 @@ if [ ! -e "$ROOT/bin/sh" ] && [ ! -L "$ROOT/bin" ]; then
       else
         echo "!! nao descomprimi xz. No Termux (sem root):"
         echo "   pkg install xz-utils"
-        echo "   xz -dk $DEFAULT_TAR"
-        echo "   # depois: $0 ${DEFAULT_TAR%.xz}"
+        echo "   xz -dk $TARBALL"
+        echo "   # depois: $0 ${TARBALL%.xz}"
         $BB umount "$ROOT" 2>/dev/null
         exit 1
       fi

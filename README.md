@@ -10,7 +10,7 @@ Serviços Hermes/OmniRoute: só templates dinit em `device/dinit.d/` até haver 
 ## O que precisas
 
 - KernelSU + ADB
-- Tarball: `~/armtix-dinit-20260124.tar.xz` (home do Termux)
+- Tarball: `armtix-dinit-20260921.tar.xz` — home do Termux ou `/data/local/tmp` (download automático se faltar: [armtix-dinit-20260921.tar.xz](https://armtix.artixlinux.org/images/armtix-dinit-20260921.tar.xz))
 - Módulo `ksu-module` (SELinux do loop)
 - App **Termux:X11** (`com.termux.x11`) — F-Droid ou [GitHub nightly](https://github.com/termux/termux-x11/releases). O Termux base **não chega**.
 
@@ -66,9 +66,12 @@ O bootstrap usa `SKIP_GPU=1` por defeito (nucleo + XFCE). GPU + desktop:
 
 Rootfs inconsistente (libs/pacman partidos): **não** há recovery de libs — `YES=1 /data/linux/wipe-chroot.sh && /data/linux/bootstrap.sh`.
 
-Fonte padrão do tarball:
+Fonte do tarball (ordem):
 
-`/data/data/com.termux/files/home/armtix-dinit-20260124.tar.xz`
+1. argumento / `ARMTIX_TAR`
+2. home Termux: `~/armtix-dinit-20260921.tar.xz`
+3. `/data/local/tmp/armtix-dinit-20260921.tar.xz`
+4. download para `/data/local/tmp`: https://armtix.artixlinux.org/images/armtix-dinit-20260921.tar.xz
 
 Se `.xz` falhar, no Termux: `pkg install xz-utils && xz -dk ~/armtix-dinit-….tar.xz`
 
