@@ -1,0 +1,11 @@
+# OmniRoute — STUB / template
+# Sem binario neste repo. Quando existir /usr/local/bin/omniroute:
+#   /data/linux/install-dinit-services.sh omniroute
+#   ln -s ../omniroute /etc/dinit.d/boot.d/omniroute
+#   dinitctl start omniroute
+type            = process
+command         = /usr/local/bin/omniroute
+restart         = true
+smooth-recovery = true
+logfile         = /var/log/dinit/omniroute.log
+depends-on      = network.target

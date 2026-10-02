@@ -1,0 +1,6 @@
+id=artix_chroot_loop
+name=Artix chroot loop sepolicy
+version=v1.0
+versionCode=1
+author=local
+description=Allow kernel loop to read/write rootfs.img under /data

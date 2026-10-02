@@ -1,0 +1,7 @@
+# Servico de teste — validar dinit no chroot Android
+# Arranque via ficheiro: symlink em /etc/dinit.d/boot.d/dinit-test
+type            = process
+command         = /usr/local/bin/dinit-test-svc.sh
+restart         = true
+smooth-recovery = true
+logfile         = /var/log/dinit/dinit-test.log

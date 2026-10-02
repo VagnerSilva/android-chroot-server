@@ -1,0 +1,4 @@
+allow kernel system_data_root_file file { read write getattr open lock ioctl }
+allow kernel system_data_file file { read write getattr open lock ioctl }
+allow kernel media_rw_data_file file { read write getattr open lock ioctl }
+allow kernel self:capability sys_admin

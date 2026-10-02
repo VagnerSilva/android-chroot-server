@@ -1,0 +1,10 @@
+# XFCE sobre Termux:X11 — DISPLAY :0 (GPU Android)
+# Ativar: /data/linux/install-dinit-services.sh xfce-x11
+# Nota: o servidor X (CmdEntryPoint) e arrancado por /data/linux/x11-start.sh
+type            = process
+command         = /usr/local/bin/xfce-x11-session.sh start
+stop-command    = /usr/local/bin/xfce-x11-session.sh stop
+restart         = true
+smooth-recovery = true
+logfile         = /var/log/dinit/xfce-x11.log
+waits-for       = dbus

@@ -1,0 +1,14 @@
+--- a/src/gallium/drivers/zink/zink_screen.c
++++ b/src/gallium/drivers/zink/zink_screen.c
+@@ -713,6 +713,12 @@
+       uint32_t modes = BITFIELD_MASK(MESA_PRIM_COUNT);
+       if (!screen->have_triangle_fans || !screen->info.feats.features.geometryShader)
+          modes &= ~BITFIELD_BIT(MESA_PRIM_QUADS);
++      /* Mali proprietary: GS quad lowering SIGSEGV in gdrv0 (glxgears QUAD_STRIP).
++       * Force gallium primconvert → triangles instead of zink GS path.
++       */
++      if (zink_driverid(screen) == VK_DRIVER_ID_ARM_PROPRIETARY)
++         modes &= ~BITFIELD_BIT(MESA_PRIM_QUADS);
+       modes &= ~BITFIELD_BIT(MESA_PRIM_QUAD_STRIP);
+       modes &= ~BITFIELD_BIT(MESA_PRIM_POLYGON);
+       modes &= ~BITFIELD_BIT(MESA_PRIM_LINE_LOOP);

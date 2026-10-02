@@ -1,0 +1,14 @@
+##
+## Arch Linux ARM (aarch64) — so para pacotes em falta no ARMtix
+## Formato: http://mirror.archlinuxarm.org/$arch/$repo
+## (diferente do Artix: .../repos/$repo/os/$arch)
+##
+
+## Geo-IP / primario
+Server = http://mirror.archlinuxarm.org/$arch/$repo
+
+## Alemanha
+Server = http://de.mirror.archlinuxarm.org/$arch/$repo
+
+## EUA (NJ)
+Server = http://nj.us.mirror.archlinuxarm.org/$arch/$repo

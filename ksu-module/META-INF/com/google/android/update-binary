@@ -1,0 +1,16 @@
+#!/sbin/sh
+# Minimal Magisk/KernelSU module installer (flashable zip).
+
+OUTFD=/proc/self/fd/$2
+ZIPFILE="$3"
+
+ui_print() {
+  echo -e "ui_print $1\nui_print" >"$OUTFD"
+}
+
+ui_print "- Artix chroot loop sepolicy"
+MODDIR=/data/adb/modules_update/artix_chroot_loop
+mkdir -p "$MODDIR"
+unzip -o "$ZIPFILE" 'module.prop' 'sepolicy.rule' -d "$MODDIR" >&2
+ui_print "- Done. Reboot required."
+exit 0

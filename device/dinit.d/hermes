@@ -1,0 +1,12 @@
+# Hermes — STUB / template
+# Sem binario neste repo. Quando existir /usr/local/bin/hermes:
+#   /data/linux/install-dinit-services.sh hermes
+#   ln -s ../hermes /etc/dinit.d/boot.d/hermes
+#   dinitctl start hermes
+type            = process
+command         = /usr/local/bin/hermes
+restart         = true
+smooth-recovery = true
+logfile         = /var/log/dinit/hermes.log
+depends-on      = network.target
+# waits-for     = omniroute

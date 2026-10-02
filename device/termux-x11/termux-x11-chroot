@@ -1,0 +1,17 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# Wrapper: TMPDIR nativo + XKB do rootfs Artix (path absoluto no host)
+export TMPDIR="${TMPDIR:-$PREFIX/tmp}"
+if [ -z "${XKB_CONFIG_ROOT:-}" ]; then
+  # Nao usar o symlink .../X11/xkb -> /usr/share/... (so resolve dentro do chroot)
+  for d in \
+    /data/linux/mnt/usr/share/xkeyboard-config-2 \
+    /data/linux/mnt/usr/share/X11/xkb
+  do
+    if [ -d "$d/symbols" ] || [ -d "$d" ]; then
+      export XKB_CONFIG_ROOT="$d"
+      break
+    fi
+  done
+fi
+unset LD_LIBRARY_PATH LD_PRELOAD
+exec "$PREFIX/bin/termux-x11" "$@"

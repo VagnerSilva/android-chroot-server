@@ -1,0 +1,13 @@
+##
+## ARMtix (Artix aarch64) — mirrorlist
+## NAO uses mirrors x86 do Artix (404 em aarch64).
+##
+## Formato oficial: .../repos/$repo/os/$arch
+## Espelho RU (path sem /repos): .../$repo/os/$arch
+##
+
+## Oficial / Cloudflare (EU)
+Server = https://armtix.artixlinux.org/repos/$repo/os/$arch
+
+## Espelho primario RU (path alternativo)
+Server = https://repo.armtixlinux.org/$repo/os/$arch
