@@ -11,7 +11,7 @@ Serviços Hermes/OmniRoute: só templates dinit em `device/dinit.d/` até haver 
 
 - KernelSU + ADB
 - Tarball: `~/armtix-dinit-20260124.tar.xz` (home do Termux)
-- Módulo `rootfs/ksu-module` (SELinux do loop)
+- Módulo `ksu-module` (SELinux do loop)
 - App **Termux:X11** (`com.termux.x11`) — F-Droid ou [GitHub nightly](https://github.com/termux/termux-x11/releases). O Termux base **não chega**.
 
 ---
@@ -19,7 +19,7 @@ Serviços Hermes/OmniRoute: só templates dinit em `device/dinit.d/` até haver 
 ## 1. Enviar scripts (PC)
 
 ```powershell
-cd rootfs\host
+cd host
 .\deploy.ps1
 ```
 
@@ -272,7 +272,7 @@ Display separado: `mediatek-drm` → `/dev/dri/card0` (não confundir com Mali K
 
 `libGLES_mali.so` / `vulkan.mali.so` são **Android/Bionic**. Runtime isolado em `/opt/android-mali` (cópia selectiva). Mounts `/mnt/system|vendor|apex` só para extracção.
 
-**deps offline (runtime-only):** `rootfs/deps/` traz `mesa25-android-mali-*.tar.zst` + `libhybris-opt-arm64.tar.zst` + `libc-hybris.so` (+ opcional `sysvk-opt-arm64.tar.zst`). O `deploy`/`prepare` instala-os em `/data/linux/deps/`; `run-setup-xfce` / `run-setup-gpu-hybris` copiam para o chroot. **Sem makepkg/base-devel** no device — libhybris e Mesa vêm pré-compilados. `android-vulkan-bridge.tar.gz` é legado e não é usado no fluxo actual.
+**deps offline (runtime-only):** `deps/` traz `mesa25-android-mali-*.tar.zst` + `libhybris-opt-arm64.tar.zst` + `libc-hybris.so` (+ opcional `sysvk-opt-arm64.tar.zst`). O `deploy`/`prepare` instala-os em `/data/linux/deps/`; `run-setup-xfce` / `run-setup-gpu-hybris` copiam para o chroot. **Sem makepkg/base-devel** no device — libhybris e Mesa vêm pré-compilados. `android-vulkan-bridge.tar.gz` é legado e não é usado no fluxo actual.
 
 ```sh
 /data/linux/linux-start.sh

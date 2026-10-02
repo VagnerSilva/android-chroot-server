@@ -174,7 +174,7 @@ cat <<EOF
 ============================================================
  Proximos passos (no PC):
    # repor scripts no device
-   rootfs/host/prepare.sh   ou   rootfs/host/deploy.ps1
+   host/prepare.sh   ou   host/deploy.ps1
  Depois no device:
    /data/linux/install-rootfs.sh
    /data/linux/linux-start.sh

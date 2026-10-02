@@ -60,7 +60,7 @@ nem no telefone:
 
 ```sh
 # no WSL (x86_64), com gcc-aarch64-linux-gnu + libc6-dev-arm64-cross + zstd
-bash rootfs/host/build-libhybris-a16-vndk34-wsl.sh
+bash host/build-libhybris-a16-vndk34-wsl.sh
 ```
 
 Saída em `~/mali-runtime/`:
@@ -69,7 +69,7 @@ Saída em `~/mali-runtime/`:
 - `artifacts/` — `*.so`, `manifest.txt`, `sha256sums.txt`, `libhybris-opt-arm64.tar.zst`
 
 O script empacota `libhybris-opt-arm64.tar.zst` (layout `./opt/libhybris/...`)
-e copia para `rootfs/deps/` (ou `LIBHYBRIS_OPT_OUT=`). No device,
+e copia para `deps/` (ou `LIBHYBRIS_OPT_OUT=`). No device,
 `install-libhybris-opt.sh` extrai esse tarball para `/opt/libhybris`.
 
 ### sysvk-opt (WSL cross-build AArch64)
@@ -82,11 +82,11 @@ Stack do android-vulkan-bridge (não o `sysvk` leve):
 ```sh
 # no WSL (x86_64), com gcc-aarch64-linux-gnu + meson/cmake/ninja +
 # libs aarch64 (libdrm/x11/wayland/xcb) + zstd
-bash rootfs/host/build-sysvk-opt-wsl.sh
+bash host/build-sysvk-opt-wsl.sh
 ```
 
 Saída: `~/mali-runtime/artifacts/sysvk-opt-arm64.tar.zst` (também
-copiado para `rootfs/deps/` ou `SYSVK_OPT_OUT=`). No device,
+copiado para `deps/` ou `SYSVK_OPT_OUT=`). No device,
 `install-sysvk-opt.sh` extrai para `/` e a Fase F do setup activa Vulkan.
 
 ### mesa25 overlay (WSL cross-build AArch64)
@@ -100,13 +100,13 @@ Fonte por omissão: `/home/vagners/arch-root/mesa25` (tag 25.1.2).
 ```sh
 # no WSL (x86_64), com aarch64-linux-gnu-gcc + meson/ninja +
 # libvulkan-dev:arm64 libdrm/x11/wayland arm64 + zstd
-bash rootfs/host/build-mesa25-android-mali-wsl.sh
+bash host/build-mesa25-android-mali-wsl.sh
 ```
 
 Gate: `kopper_init_screen` ≥ 32 bytes em `libgallium-25.1.2.so`.
 Patch: `host/patches/mesa25-zink-mali-no-quads.patch` (Mali: sem QUADS
 via GS — primconvert → triangles; evita SIGSEGV no glxgears).
-Saída: `mesa25-android-mali-25.1.2-arm64.tar.zst` → `rootfs/deps/`.
+Saída: `mesa25-android-mali-25.1.2-arm64.tar.zst` → `deps/`.
 
 `mesa25-*`, `libhybris-opt-*` e `sysvk-opt-*` são builds locais (prefixos
 `/opt/android-mali`, `/opt/libhybris`, `/usr` para sysvk); não vêm do mirror ARMtix.
