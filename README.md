@@ -7,6 +7,8 @@ Real chroot on an ext4 image. No proot. Desktop via **Termux:X11** (GPU).
 dinit starts at boot through KernelSU. SSH runs inside the container.
 Hermes/OmniRoute services: dinit templates only in `device/dinit.d/` until binaries exist.
 
+**GPU hybris (acceleration):** validated **only** on MediaTek **mt6878** + Mali-G615 MC2 (e.g. Moto G86). SoftGL/CPU works on other devices; the hybris/Zink stack is **not** generic.
+
 ---
 
 ## Requirements
@@ -15,6 +17,7 @@ Hermes/OmniRoute services: dinit templates only in `device/dinit.d/` until binar
 - Tarball: `armtix-dinit-20260921.tar.xz` — Termux home or `/data/local/tmp` (auto-download if missing: [armtix-dinit-20260921.tar.xz](https://armtix.artixlinux.org/images/armtix-dinit-20260921.tar.xz))
 - `ksu-module` (SELinux for loop devices)
 - **Termux:X11** app (`com.termux.x11`) — F-Droid or [GitHub nightly](https://github.com/termux/termux-x11/releases). Base Termux alone is **not enough**.
+- For accelerated GPU: **mt6878** SoC (blobs under `/vendor/lib64/.../mt6878/`) — other chips need manual adaptation
 
 ---
 
@@ -83,6 +86,8 @@ GPU / Zink are **not** part of this phase.
 ---
 
 ## 3b. On-screen GPU (recommended)
+
+**mt6878 / Mali-G615 MC2 only.** On other devices use softGL (`gpu-desktop.sh cpu` / XFCE default).
 
 One command covers setup (if missing) + Zink in XFCE + Termux:X11:
 
@@ -261,7 +266,9 @@ dinitctl restart xfce-x11
 # revert: /data/linux/gpu-desktop.sh cpu
 ```
 
-### MediaTek GPU (Moto G86 / Mali-G615 MC2)
+### MediaTek mt6878 GPU (Moto G86 / Mali-G615 MC2)
+
+**Scope:** the hybris setup (`run-setup-gpu-hybris`, `gpu-desktop`, overlays in `deps/`) is **specific** to the **mt6878** platform + **Mali-G615 MC2** GPU. Hardcoded paths: `/vendor/lib64/egl/mt6878/`, `/vendor/lib64/hw/mt6878/`, etc. Other MediaTek/Mali SoCs are **not** supported without changing the setup.
 
 Architecture (**GLES-first**):
 
