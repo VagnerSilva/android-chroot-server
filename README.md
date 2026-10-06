@@ -256,6 +256,7 @@ Day to day:
 ```
 
 Display: **Termux:X11** app on the device.  
+Windows are clamped to the screen workarea (`xfce-fit-windows`; close button on the left). Re-apply without wipe: `ARTIX_USER=<user> /data/linux/run-setup-xfce.sh`, then `x11-stop` + `x11-start`.  
 Config: `/etc/artix-x11.conf` (`X11_USER`, `X11_DISPLAY`, `XFCE_USE_ZINK`).  
 Session: `dinitctl restart xfce-x11` (with X0 already active).
 

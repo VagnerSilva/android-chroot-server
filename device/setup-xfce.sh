@@ -67,9 +67,9 @@ fi
 
 echo ">> pacman: xfce4 + mesa-utils (sem mesa pacman / sem tigervnc)"
 pacman -Sy --noconfirm --needed --overwrite='*' \
-  xfce4 xfce4-goodies mesa-utils dbus \
+  xfce4 xfce4-goodies mesa-utils dbus wmctrl xorg-xprop xorg-xdpyinfo \
   || pacman -S --noconfirm --needed --overwrite='*' \
-  xfce4 xfce4-goodies mesa-utils dbus
+  xfce4 xfce4-goodies mesa-utils dbus wmctrl xorg-xprop xorg-xdpyinfo
 
 mkdir -p "$HOME_DIR/.config/xfce4/xfconf/xfce-perchannel-xml" \
   /var/log/dinit /usr/local/bin /etc/dinit.d/boot.d
@@ -115,8 +115,17 @@ EOF
 chmod 644 /etc/artix-x11.conf
 unset _ENV_ZINK _PREV_ZINK
 
-# seed xfconf: box_move/resize ON; compositor OFF (Termux:X11+softGL = tela preta)
+# seed xfconf: box_move/resize ON; compositor OFF; fechar a esquerda; sem wrap
 XFWM_XML="$HOME_DIR/.config/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml"
+xfwm_xml_set() {
+  _f=$1 _n=$2 _t=$3 _v=$4
+  [ -f "$_f" ] || return 0
+  if grep -q "name=\"$_n\"" "$_f"; then
+    sed -i "s/name=\"$_n\" type=\"[^\"]*\" value=\"[^\"]*\"/name=\"$_n\" type=\"$_t\" value=\"$_v\"/" "$_f"
+  else
+    sed -i "/name=\"general\" type=\"empty\"/a\\    <property name=\"$_n\" type=\"$_t\" value=\"$_v\"/>" "$_f"
+  fi
+}
 if [ ! -f "$XFWM_XML" ]; then
   cat > "$XFWM_XML" <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -125,22 +134,17 @@ if [ ! -f "$XFWM_XML" ]; then
     <property name="box_move" type="bool" value="true"/>
     <property name="box_resize" type="bool" value="true"/>
     <property name="use_compositing" type="bool" value="false"/>
+    <property name="wrap_windows" type="bool" value="false"/>
+    <property name="button_layout" type="string" value="C|HMO"/>
   </property>
 </channel>
 EOF
 else
-  # actualizar keys sem destruir o resto (sed simples)
-  if grep -q 'name="box_move"' "$XFWM_XML"; then
-    sed -i 's/name="box_move" type="bool" value="[^"]*"/name="box_move" type="bool" value="true"/' "$XFWM_XML"
-  fi
-  if grep -q 'name="box_resize"' "$XFWM_XML"; then
-    sed -i 's/name="box_resize" type="bool" value="[^"]*"/name="box_resize" type="bool" value="true"/' "$XFWM_XML"
-  fi
-  if grep -q 'name="use_compositing"' "$XFWM_XML"; then
-    sed -i 's/name="use_compositing" type="bool" value="[^"]*"/name="use_compositing" type="bool" value="false"/' "$XFWM_XML"
-  else
-    sed -i '/name="general" type="empty"/a\    <property name="use_compositing" type="bool" value="false"/>' "$XFWM_XML"
-  fi
+  xfwm_xml_set "$XFWM_XML" box_move bool true
+  xfwm_xml_set "$XFWM_XML" box_resize bool true
+  xfwm_xml_set "$XFWM_XML" use_compositing bool false
+  xfwm_xml_set "$XFWM_XML" wrap_windows bool false
+  xfwm_xml_set "$XFWM_XML" button_layout string 'C|HMO'
 fi
 chown "$USER_NAME:$USER_NAME" "$XFWM_XML"
 
@@ -189,11 +193,16 @@ apply_wm_prefs() {
         || xfconf-query -c xfwm4 -p /general/box_resize -s true 2>/dev/null || true
       xfconf-query -c xfwm4 -p /general/use_compositing -n -t bool -s false 2>/dev/null \
         || xfconf-query -c xfwm4 -p /general/use_compositing -s false 2>/dev/null || true
+      xfconf-query -c xfwm4 -p /general/wrap_windows -n -t bool -s false 2>/dev/null \
+        || xfconf-query -c xfwm4 -p /general/wrap_windows -s false 2>/dev/null || true
+      xfconf-query -c xfwm4 -p /general/button_layout -n -t string -s 'C|HMO' 2>/dev/null \
+        || xfconf-query -c xfwm4 -p /general/button_layout -s 'C|HMO' 2>/dev/null || true
     fi
   " || true
 }
 
 kill_session() {
+  pkill -u "$X11_USER" -f 'xfce-fit-windows' 2>/dev/null || true
   pkill -u "$X11_USER" -f 'xfce4-session' 2>/dev/null || true
   pkill -u "$X11_USER" -f 'startxfce4' 2>/dev/null || true
   sleep 1
@@ -236,6 +245,28 @@ esac
 EOF
 fi
 chmod 755 /usr/local/bin/xfce-x11-session.sh
+
+FIT_SRC=/data/linux/xfce-fit-windows.sh
+[ -f "$FIT_SRC" ] || FIT_SRC=/root/xfce-fit-windows.sh
+if [ -f "$FIT_SRC" ]; then
+  cp "$FIT_SRC" /usr/local/bin/xfce-fit-windows.sh
+  chmod 755 /usr/local/bin/xfce-fit-windows.sh
+fi
+mkdir -p "$HOME_DIR/.config/autostart"
+cat > "$HOME_DIR/.config/autostart/xfce-fit-windows.desktop" <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=XFCE fit windows
+Comment=Clamp windows to the device workarea
+Exec=/usr/local/bin/xfce-fit-windows.sh
+Hidden=false
+SkipPager=true
+OnlyShowIn=XFCE;
+X-XFCE-Autostart-Override=true
+StartupNotify=false
+EOF
+chown "$USER_NAME:$USER_NAME" "$HOME_DIR/.config/autostart/xfce-fit-windows.desktop"
+chown "$USER_NAME:$USER_NAME" "$HOME_DIR/.config/autostart"
 
 # dinit: sessao XFCE (servidor X vem do x11-start.sh)
 cat > /etc/dinit.d/xfce-x11 <<'EOF'

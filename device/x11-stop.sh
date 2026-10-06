@@ -57,7 +57,7 @@ $BB nsenter $NSARGS -- $BB chroot "$ROOT" /usr/bin/env -i \
   /usr/local/bin/xfce-x11-session.sh stop 2>/dev/null || true
 
 # shellcheck disable=SC2086
-$BB nsenter $NSARGS -- pkill -f 'xfce4-session|startxfce4|xfwm4|xfdesktop|xfce4-panel' 2>/dev/null || true
+$BB nsenter $NSARGS -- pkill -f 'xfce4-session|startxfce4|xfwm4|xfdesktop|xfce4-panel|xfce-fit-windows' 2>/dev/null || true
 
 stop_termux_x11
 

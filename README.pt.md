@@ -256,6 +256,7 @@ Dia a dia:
 ```
 
 Ecrã: app **Termux:X11** no dispositivo.  
+Janelas são limitadas à área útil do ecrã (`xfce-fit-windows`; botão fechar à esquerda). Reaplicar sem wipe: `ARTIX_USER=<user> /data/linux/run-setup-xfce.sh`, depois `x11-stop` + `x11-start`.  
 Config: `/etc/artix-x11.conf` (`X11_USER`, `X11_DISPLAY`, `XFCE_USE_ZINK`).  
 Sessao: `dinitctl restart xfce-x11` (com X0 já activo).
 

@@ -59,11 +59,16 @@ apply_wm_prefs() {
         || xfconf-query -c xfwm4 -p /general/box_resize -s true 2>/dev/null || true
       xfconf-query -c xfwm4 -p /general/use_compositing -n -t bool -s false 2>/dev/null \
         || xfconf-query -c xfwm4 -p /general/use_compositing -s false 2>/dev/null || true
+      xfconf-query -c xfwm4 -p /general/wrap_windows -n -t bool -s false 2>/dev/null \
+        || xfconf-query -c xfwm4 -p /general/wrap_windows -s false 2>/dev/null || true
+      xfconf-query -c xfwm4 -p /general/button_layout -n -t string -s 'C|HMO' 2>/dev/null \
+        || xfconf-query -c xfwm4 -p /general/button_layout -s 'C|HMO' 2>/dev/null || true
     fi
   " || true
 }
 
 kill_session() {
+  pkill -u "$X11_USER" -f 'xfce-fit-windows' 2>/dev/null || true
   pkill -u "$X11_USER" -f 'xfce4-session' 2>/dev/null || true
   pkill -u "$X11_USER" -f 'startxfce4' 2>/dev/null || true
   # nao matar o servidor X (Termux:X11)

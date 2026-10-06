@@ -53,6 +53,17 @@ if [ -f /data/linux/xfce-x11-session.sh ]; then
   strip_crlf "$ROOT/usr/local/bin/xfce-x11-session.sh"
   chmod 755 "$ROOT/usr/local/bin/xfce-x11-session.sh"
 fi
+FIT_SRC=/data/linux/xfce-fit-windows.sh
+[ -f "$FIT_SRC" ] || FIT_SRC="$(dirname "$0")/xfce-fit-windows.sh"
+if [ -f "$FIT_SRC" ]; then
+  mkdir -p "$ROOT/usr/local/bin" "$ROOT/root"
+  cp "$FIT_SRC" "$ROOT/usr/local/bin/xfce-fit-windows.sh"
+  cp "$FIT_SRC" "$ROOT/root/xfce-fit-windows.sh"
+  chmod 755 "$ROOT/usr/local/bin/xfce-fit-windows.sh" "$ROOT/root/xfce-fit-windows.sh"
+  strip_crlf "$ROOT/usr/local/bin/xfce-fit-windows.sh"
+  strip_crlf "$ROOT/root/xfce-fit-windows.sh"
+  chmod 755 "$ROOT/usr/local/bin/xfce-fit-windows.sh" "$ROOT/root/xfce-fit-windows.sh"
+fi
 
 ENV_PREFIX=""
 [ -n "${ARTIX_USER:-}" ] && ENV_PREFIX="$ENV_PREFIX ARTIX_USER='$ARTIX_USER'"

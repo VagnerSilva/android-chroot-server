@@ -53,6 +53,7 @@ for f in common.sh install-rootfs.sh wipe-chroot.sh linux-start.sh \
   install-direnv.sh enable-archlinuxarm.sh   fix-dbus-chroot.sh \
   fix-dinit-chroot.sh fix-elogind-chroot.sh fix-sshd-chroot.sh \
   setup-xfce.sh run-setup-xfce.sh x11-start.sh x11-stop.sh xfce-x11-session.sh \
+  xfce-fit-windows.sh \
   setup-gpu-mediatek.sh run-setup-gpu-mediatek.sh \
   setup-gpu-hybris.sh run-setup-gpu-hybris.sh gpu-check.sh \
   repair-libgcc.sh \
