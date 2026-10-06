@@ -83,6 +83,15 @@ cp "$SETUP_SRC" "$ROOT/root/setup-artix.sh"
 chmod 755 "$ROOT/root/setup-artix.sh"
 strip_crlf "$ROOT/root/setup-artix.sh"
 
+SANDBOX_SRC=/data/linux/android-pacman-sandbox.sh
+[ -f "$SANDBOX_SRC" ] || SANDBOX_SRC="$(dirname "$0")/android-pacman-sandbox.sh"
+if [ -f "$SANDBOX_SRC" ]; then
+  mkdir -p "$ROOT/usr/local/sbin"
+  cp "$SANDBOX_SRC" "$ROOT/usr/local/sbin/android-pacman-sandbox.sh"
+  chmod 755 "$ROOT/usr/local/sbin/android-pacman-sandbox.sh"
+  strip_crlf "$ROOT/usr/local/sbin/android-pacman-sandbox.sh"
+fi
+
 if [ ! -f "$PIDF" ] || ! container_vivo "$(cat "$PIDF")"; then
   echo ">> container parado — a subir..."
   sh /data/linux/linux-start.sh || exit 1

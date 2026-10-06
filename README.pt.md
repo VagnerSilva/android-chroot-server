@@ -185,10 +185,18 @@ Senhas com especiais: aspas simples ou `passwd <user> -` (stdin).
 
 ### Pacman
 
+No **host Android** (`su`), com o container a correr — não edita `/etc` do telefone:
+
 ```sh
 /data/linux/fix-pacman-mirrors.sh
 /data/linux/fix-pacman-sandbox.sh
 sudo pacman -Syu
+```
+
+Hang em **100% após o download**: sandbox Landlock do pacman 7 no kernel Android. `fix-pacman-sandbox.sh` põe `DisableSandbox` em `[options]` e instala um hook ALPM que o repõe após upgrade do pacote `pacman`. Se mesmo assim travar (hooks alpm / dbus):
+
+```sh
+sudo pacman -S --noconfirm --hookdir "$(mktemp -d)" <pacote>
 ```
 
 Pacotes Arch em falta (ex. direnv) — usa **Arch Linux ARM**, não Arch x86:
@@ -352,6 +360,7 @@ dmesg | grep -iE 'avc|mali|gpu'
 | Dar sudo | `/data/linux/artix-user.sh sudo nome` |
 | Remover user | `/data/linux/artix-user.sh remove nome` |
 | Mirrors ARMtix | `/data/linux/fix-pacman-mirrors.sh` |
+| Sandbox pacman (hang 100%) | `/data/linux/fix-pacman-sandbox.sh` |
 | Repo ALARM | `/data/linux/enable-archlinuxarm.sh` |
 | Setup XFCE/X11 | `ARTIX_USER=<user> /data/linux/run-setup-xfce.sh` |
 | Ligar Termux:X11 + XFCE | `/data/linux/x11-start.sh` |
@@ -450,9 +459,17 @@ dmesg | grep -iE 'avc|ext4|loop'
 
 ---
 
-### pacman: Landlock / sandbox / CheckSpace / kernel
+### pacman: hang a 100% após download / Landlock / CheckSpace / kernel
 
-Em `[options]` (aplicado por `setup-artix` / `fix-pacman-sandbox`):
+O pacman 7+ aplica sandbox Landlock na **extracção** (depois da barra chegar a 100%). No kernel Android isso trava. Correr no **host Android** (`su`), container a correr:
+
+```sh
+/data/linux/fix-pacman-sandbox.sh
+```
+
+Isto edita o `pacman.conf` **do chroot** (nsenter) e instala `/etc/pacman.d/hooks/zz-android-disable-sandbox.hook` para repor a config se o pacote `pacman` for actualizado.
+
+Em `[options]`:
 
 ```
 DisableSandbox
@@ -465,8 +482,10 @@ Sem `DownloadUser` (o user `alpm` falha no chroot Android; não forçar `root` �
 `IgnorePkg` evita actualizar kernel/firmware/mkinitcpio de PC (o chroot partilha o kernel do telefone).  
 O setup GPU usa `pacman -Sy --needed` (não `-Syu`) e instala `libgcc` + `libstdc++` (não só o meta `gcc-libs`).
 
+Se o hang continuar com `DisableSandbox` já presente (hooks alpm à espera de dbus):
+
 ```sh
-/data/linux/fix-pacman-sandbox.sh
+sudo pacman -S --noconfirm --hookdir "$(mktemp -d)" <pacote>
 ```
 
 ---

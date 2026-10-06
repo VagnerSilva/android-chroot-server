@@ -29,6 +29,63 @@ for u in root; do
   fi
 done
 
+mkdir -p /mnt/android /run /tmp /usr/local/sbin /etc/pacman.d/hooks
+chmod 1777 /tmp
+
+# pacman 7+: sandbox Landlock/alpm ANTES de qualquer pacman -S
+# (kernel Android sem Landlock — hang a 100% apos download)
+if [ -f /usr/local/sbin/android-pacman-sandbox.sh ]; then
+  /bin/sh /usr/local/sbin/android-pacman-sandbox.sh
+else
+  echo ">> android-pacman-sandbox.sh ausente — aplicar inline"
+  if [ -f /etc/pacman.conf ]; then
+    sed -i '/^# Android chroot: kernel sem Landlock$/d' /etc/pacman.conf
+    sed -i '/^# Android chroot: kernel sem Landlock \/ sandbox alpm$/d' /etc/pacman.conf
+    sed -i '/^DisableSandbox/d' /etc/pacman.conf
+    sed -i '/^DownloadUser /d' /etc/pacman.conf
+    sed -i '/^# DownloadUser /d' /etc/pacman.conf
+    sed -i 's/^CheckSpace$/# CheckSpace/' /etc/pacman.conf
+    sed -i '/^IgnorePkg /d' /etc/pacman.conf
+    if grep -q '^\[options\]' /etc/pacman.conf; then
+      awk '
+        BEGIN { done=0 }
+        /^\[options\]/ && !done {
+          print
+          print "# Android chroot: kernel sem Landlock / sandbox alpm"
+          print "DisableSandbox"
+          print "IgnorePkg = linux-aarch64 linux-aarch64-lts linux-aarch64-headers linux-firmware mkinitcpio mkinitcpio-busybox"
+          done=1
+          next
+        }
+        { print }
+      ' /etc/pacman.conf > /etc/pacman.conf.tmp && mv /etc/pacman.conf.tmp /etc/pacman.conf
+    fi
+  fi
+fi
+
+# ARMtix: pacotes sem assinatura
+if [ -f /etc/pacman.conf ]; then
+  awk '
+    BEGIN { repos["system"]=1; repos["world"]=1; repos["galaxy"]=1; repos["armtix"]=1 }
+    /^\[/ {
+      name=$0; gsub(/[\[\]]/,"",name)
+      print
+      if (name in repos) { print "SigLevel = Never"; inrepo=1; next }
+      inrepo=0; next
+    }
+    inrepo && /^SigLevel/ { next }
+    { print }
+  ' /etc/pacman.conf > /etc/pacman.conf.tmp && mv /etc/pacman.conf.tmp /etc/pacman.conf
+  echo ">> pacman: DisableSandbox + #CheckSpace + IgnorePkg + SigLevel=Never (ARMtix)"
+fi
+
+# mirrorlist ARMtix (nao usar mirrors x86)
+if [ -f /data/linux/pacman.d/mirrorlist ]; then
+  cp /data/linux/pacman.d/mirrorlist /etc/pacman.d/mirrorlist
+elif [ -f /root/mirrorlist.armtix ]; then
+  cp /root/mirrorlist.armtix /etc/pacman.d/mirrorlist
+fi
+
 # openssh (nucleo STRICT) — instalar se o rootfs base nao trouxe
 if [ ! -x /usr/bin/sshd ]; then
   echo ">> openssh ausente — pacman -S openssh openssh-dinit"
@@ -69,57 +126,6 @@ do
 done
 # Se o host tiver o script, preferir stubs completos:
 #   /data/linux/fix-dinit-chroot.sh
-
-mkdir -p /mnt/android /run /tmp
-chmod 1777 /tmp
-
-# pacman 7+: sandbox Landlock/alpm nao existe no kernel Android
-# tem de ficar na secao [options], nao no fim do ficheiro
-if [ -f /etc/pacman.conf ]; then
-  sed -i '/^# Android chroot: kernel sem Landlock$/d' /etc/pacman.conf
-  sed -i '/^# Android chroot: kernel sem Landlock \/ sandbox alpm$/d' /etc/pacman.conf
-  sed -i '/^DisableSandbox$/d' /etc/pacman.conf
-  sed -i '/^DownloadUser /d' /etc/pacman.conf
-  sed -i '/^# DownloadUser /d' /etc/pacman.conf
-  # CheckSpace falha em /data (perms) — comentar se activo
-  sed -i 's/^CheckSpace$/# CheckSpace/' /etc/pacman.conf
-  # IgnorePkg kernel/firmware (chroot partilha kernel do telefone)
-  sed -i '/^IgnorePkg /d' /etc/pacman.conf
-  if grep -q '^\[options\]' /etc/pacman.conf; then
-    awk '
-      BEGIN { done=0 }
-      /^\[options\]/ && !done {
-        print
-        print "# Android chroot: kernel sem Landlock / sandbox alpm"
-        print "DisableSandbox"
-        print "IgnorePkg = linux-aarch64 linux-aarch64-lts linux-aarch64-headers linux-firmware mkinitcpio mkinitcpio-busybox"
-        done=1
-        next
-      }
-      { print }
-    ' /etc/pacman.conf > /etc/pacman.conf.tmp && mv /etc/pacman.conf.tmp /etc/pacman.conf
-  fi
-  # ARMtix: pacotes sem assinatura
-  awk '
-    BEGIN { repos["system"]=1; repos["world"]=1; repos["galaxy"]=1; repos["armtix"]=1 }
-    /^\[/ {
-      name=$0; gsub(/[\[\]]/,"",name)
-      print
-      if (name in repos) { print "SigLevel = Never"; inrepo=1; next }
-      inrepo=0; next
-    }
-    inrepo && /^SigLevel/ { next }
-    { print }
-  ' /etc/pacman.conf > /etc/pacman.conf.tmp && mv /etc/pacman.conf.tmp /etc/pacman.conf
-  echo ">> pacman: DisableSandbox + #CheckSpace + IgnorePkg + SigLevel=Never (ARMtix)"
-fi
-
-# mirrorlist ARMtix (nao usar mirrors x86)
-if [ -f /data/linux/pacman.d/mirrorlist ]; then
-  cp /data/linux/pacman.d/mirrorlist /etc/pacman.d/mirrorlist
-elif [ -f /root/mirrorlist.armtix ]; then
-  cp /root/mirrorlist.armtix /etc/pacman.d/mirrorlist
-fi
 
 # glibc + libgcc/libstdc++: gcc-libs e meta no Arch novo; sem libgcc o chroot parte
 echo ">> pacman -Sy glibc libgcc libstdc++"

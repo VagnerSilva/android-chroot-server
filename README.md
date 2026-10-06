@@ -185,10 +185,18 @@ Passwords with special characters: single quotes or `passwd <user> -` (stdin).
 
 ### Pacman
 
+On the **Android host** (`su`), with the container running — does not edit the phone's `/etc`:
+
 ```sh
 /data/linux/fix-pacman-mirrors.sh
 /data/linux/fix-pacman-sandbox.sh
 sudo pacman -Syu
+```
+
+Hang at **100% after download**: pacman 7 Landlock sandbox on the Android kernel. `fix-pacman-sandbox.sh` sets `DisableSandbox` in `[options]` and installs an ALPM hook that reapplies it after a `pacman` package upgrade. If it still hangs (alpm hooks / dbus):
+
+```sh
+sudo pacman -S --noconfirm --hookdir "$(mktemp -d)" <package>
 ```
 
 Missing Arch packages (e.g. direnv) — use **Arch Linux ARM**, not Arch x86:
@@ -352,6 +360,7 @@ dmesg | grep -iE 'avc|mali|gpu'
 | Grant sudo | `/data/linux/artix-user.sh sudo name` |
 | Remove user | `/data/linux/artix-user.sh remove name` |
 | ARMtix mirrors | `/data/linux/fix-pacman-mirrors.sh` |
+| Pacman sandbox (hang at 100%) | `/data/linux/fix-pacman-sandbox.sh` |
 | ALARM repo | `/data/linux/enable-archlinuxarm.sh` |
 | XFCE/X11 setup | `ARTIX_USER=<user> /data/linux/run-setup-xfce.sh` |
 | Start Termux:X11 + XFCE | `/data/linux/x11-start.sh` |
@@ -450,9 +459,17 @@ dmesg | grep -iE 'avc|ext4|loop'
 
 ---
 
-### pacman: Landlock / sandbox / CheckSpace / kernel
+### pacman: hang at 100% after download / Landlock / CheckSpace / kernel
 
-In `[options]` (applied by `setup-artix` / `fix-pacman-sandbox`):
+Pacman 7+ sandboxes **extraction** with Landlock (after the download bar hits 100%). On the Android kernel that hangs. Run on the **Android host** (`su`) with the container up:
+
+```sh
+/data/linux/fix-pacman-sandbox.sh
+```
+
+This edits the chroot `pacman.conf` (nsenter) and installs `/etc/pacman.d/hooks/zz-android-disable-sandbox.hook` so the settings come back after a `pacman` package upgrade.
+
+In `[options]`:
 
 ```
 DisableSandbox
@@ -465,8 +482,10 @@ No `DownloadUser` (`alpm` fails in Android chroot; do not force `root` — remov
 `IgnorePkg` avoids updating PC kernel/firmware/mkinitcpio (the chroot shares the phone kernel).  
 GPU setup uses `pacman -Sy --needed` (not `-Syu`) and installs `libgcc` + `libstdc++` (not only the `gcc-libs` meta).
 
+If it still hangs with `DisableSandbox` already set (alpm hooks waiting on dbus):
+
 ```sh
-/data/linux/fix-pacman-sandbox.sh
+sudo pacman -S --noconfirm --hookdir "$(mktemp -d)" <package>
 ```
 
 ---

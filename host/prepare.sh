@@ -49,7 +49,7 @@ strip_crlf() {
 for f in common.sh install-rootfs.sh wipe-chroot.sh linux-start.sh \
   linux-stop.sh linux-shell.sh linux-status.sh run-setup.sh bootstrap.sh \
   setup-artix.sh 99-linux.sh install-autostart.sh install-dinit-services.sh dinit-test-svc.sh \
-  fix-pacman-sandbox.sh fix-pacman-mirrors.sh artix-user.sh \
+  fix-pacman-sandbox.sh android-pacman-sandbox.sh fix-pacman-mirrors.sh artix-user.sh \
   install-direnv.sh enable-archlinuxarm.sh   fix-dbus-chroot.sh \
   fix-dinit-chroot.sh fix-elogind-chroot.sh fix-sshd-chroot.sh \
   setup-xfce.sh run-setup-xfce.sh x11-start.sh x11-stop.sh xfce-x11-session.sh \
