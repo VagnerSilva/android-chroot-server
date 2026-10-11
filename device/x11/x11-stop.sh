@@ -4,7 +4,7 @@
 # su -c "/data/linux/x11-stop.sh"
 # ============================================================
 
-. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh"
+. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/../core/common.sh"
 
 TERMUX_TMP=/data/data/com.termux/files/usr/tmp
 SOCK_X0="$TERMUX_TMP/.X11-unix/X0"

@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # check-gpu.sh — diagnóstico de GPU Mali/GLES/Vulkan no chroot
 
-. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh"
+. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/../core/common.sh"
 
 if [ ! -f "$PIDF" ] || ! container_vivo "$(cat "$PIDF" 2>/dev/null || printf '')"; then
   echo "GPU_STATUS=unknown"

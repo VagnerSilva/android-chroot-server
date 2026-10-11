@@ -5,7 +5,9 @@
 Chroot real em imagem ext4. Sem proot. Desktop via **Termux:X11** (GPU).
 
 O dinit sobe no boot via KernelSU. SSH fica dentro.
-Serviços Hermes/OmniRoute: só templates dinit em `device/dinit.d/` até haver binários.
+Serviços Hermes/OmniRoute: só templates dinit em `device/deploy/dinit.d/` até haver binários.
+
+Os scripts do device estão agrupados em `device/{core,setup,fix,gpu,user,x11,deploy}/`. O `prepare.sh` instala os paths por categoria em `/data/linux/` e mantém aliases `.sh` na raiz por compatibilidade.
 
 **GPU hybris (aceleração):** validado **apenas** em MediaTek **mt6878** + Mali-G615 MC2 (ex. Moto G86). SoftGL/CPU funciona noutros dispositivos; o stack hybris/Zink **não** é genérico.
 

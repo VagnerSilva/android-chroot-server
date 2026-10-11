@@ -8,11 +8,11 @@
 # SKIP_AUTOSTART=1 — nao instalar / nao actualizar
 # ============================================================
 
-. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh"
+. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/../core/common.sh"
 
 AUTOSTART_DST=/data/adb/service.d/99-linux.sh
 AUTOSTART_SRC=/data/linux/99-linux.sh
-[ -f "$AUTOSTART_SRC" ] || AUTOSTART_SRC="$(dirname "$0")/99-linux.sh"
+[ -f "$AUTOSTART_SRC" ] || AUTOSTART_SRC="$(dirname "$0")/../deploy/99-linux.sh"
 
 if [ "${SKIP_AUTOSTART:-0}" = 1 ]; then
   echo ">> SKIP_AUTOSTART=1 — autostart nao instalado"

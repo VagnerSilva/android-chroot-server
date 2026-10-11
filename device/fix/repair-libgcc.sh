@@ -13,7 +13,7 @@
 # Ferramentas: busybox KSU/Magisk (tar + xz).
 # ============================================================
 
-. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh"
+. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/../core/common.sh"
 
 CACHE_HOST="$BASE/cache/repair-libgcc"
 TERMUX_HOME=/data/data/com.termux/files/home

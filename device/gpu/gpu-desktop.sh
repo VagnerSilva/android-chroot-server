@@ -12,7 +12,7 @@
 # Boot automatico NAO sobe XFCE — so o container (99-linux.sh).
 # ============================================================
 
-. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh"
+. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/../core/common.sh"
 
 ensure_dirs
 

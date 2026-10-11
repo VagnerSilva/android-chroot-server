@@ -8,7 +8,7 @@
 # ============================================================
 set -e
 
-. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh"
+. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/../core/common.sh"
 
 if [ ! -f "$PIDF" ] || ! container_vivo "$(cat "$PIDF")"; then
   echo "!! container parado"
@@ -23,8 +23,8 @@ if ! grep -q '^# BEGIN Arch Linux ARM' "$ROOT/etc/pacman.conf" 2>/dev/null; then
   echo ">> a ativar Arch Linux ARM..."
   if [ -x /data/linux/enable-archlinuxarm.sh ]; then
     /data/linux/enable-archlinuxarm.sh
-  elif [ -x "$(dirname "$0")/enable-archlinuxarm.sh" ]; then
-    "$(dirname "$0")/enable-archlinuxarm.sh"
+  elif [ -x "$(dirname "$0")/../fix/enable-archlinuxarm.sh" ]; then
+    "$(dirname "$0")/../fix/enable-archlinuxarm.sh"
   else
     echo "!! falta enable-archlinuxarm.sh"
     exit 1

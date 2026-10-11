@@ -30,7 +30,7 @@
 #   USER_PROMPT_DEFAULT=s|n  default do s/N (bootstrap usa s)
 # ============================================================
 
-. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh"
+. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/../core/common.sh"
 
 SETUP_SRC=/data/linux/setup-artix.sh
 [ -f "$SETUP_SRC" ] || SETUP_SRC="$(dirname "$0")/setup-artix.sh"

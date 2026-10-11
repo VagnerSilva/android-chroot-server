@@ -5,10 +5,10 @@
 # ============================================================
 set -e
 
-. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh"
+. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/../core/common.sh"
 
 SRC=/data/linux/android-pacman-sandbox.sh
-[ -f "$SRC" ] || SRC="$(dirname "$0")/android-pacman-sandbox.sh"
+[ -f "$SRC" ] || SRC="$(dirname "$0")/../setup/android-pacman-sandbox.sh"
 [ -f "$SRC" ] || SRC=/data/local/tmp/android-pacman-sandbox.sh
 
 if [ ! -f "$SRC" ]; then

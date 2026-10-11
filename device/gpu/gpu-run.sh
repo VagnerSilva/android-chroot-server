@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # Host wrapper: corre gpu-run DENTRO do chroot
-. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh"
+. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/../core/common.sh"
 
 if [ ! -f "$PIDF" ] || ! container_vivo "$(cat "$PIDF")"; then
   echo "!! container parado — /data/linux/linux-start.sh"

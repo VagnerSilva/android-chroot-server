@@ -5,7 +5,9 @@
 Real chroot on an ext4 image. No proot. Desktop via **Termux:X11** (GPU).
 
 dinit starts at boot through KernelSU. SSH runs inside the container.
-Hermes/OmniRoute services: dinit templates only in `device/dinit.d/` until binaries exist.
+Hermes/OmniRoute services: dinit templates only in `device/deploy/dinit.d/` until binaries exist.
+
+Device scripts are grouped under `device/{core,setup,fix,gpu,user,x11,deploy}/`. `prepare.sh` installs these category paths under `/data/linux/` and keeps root-level `.sh` aliases for compatibility.
 
 **GPU hybris (acceleration):** validated **only** on MediaTek **mt6878** + Mali-G615 MC2 (e.g. Moto G86). SoftGL/CPU works on other devices; the hybris/Zink stack is **not** generic.
 

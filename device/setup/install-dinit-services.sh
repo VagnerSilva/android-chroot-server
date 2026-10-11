@@ -11,7 +11,7 @@
 # ============================================================
 set -e
 
-. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh"
+. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/../core/common.sh"
 
 BB="${BB:-/data/adb/ksu/bin/busybox}"
 [ -x "$BB" ] || BB=/data/adb/magisk/busybox
@@ -23,7 +23,7 @@ DINIT_SRC="$BASE_SRC/dinit.d"
 
 # origem no repo apos prepare: /data/linux/dinit.d
 [ -d "$DINIT_SRC" ] || DINIT_SRC=/data/linux/dinit.d
-[ -d "$DINIT_SRC" ] || DINIT_SRC="$(dirname "$0")/dinit.d"
+[ -d "$DINIT_SRC" ] || DINIT_SRC="$(dirname "$0")/../deploy/dinit.d"
 
 if [ ! -d "$DINIT_SRC" ]; then
   echo "!! pasta de configs nao encontrada (dinit.d)"

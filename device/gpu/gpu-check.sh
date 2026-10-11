@@ -7,7 +7,7 @@
 # FAIL: llvmpipe / sem mali0 / sem arvore /opt/android-mali
 # ============================================================
 
-. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh" 2>/dev/null || true
+. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/../core/common.sh" 2>/dev/null || true
 
 run_in() {
   if [ -n "${PIDF:-}" ] && [ -f "$PIDF" ] && container_vivo "$(cat "$PIDF")" 2>/dev/null; then

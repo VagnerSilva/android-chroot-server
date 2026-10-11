@@ -10,11 +10,11 @@
 # ============================================================
 
 for C in /data/local/tmp/rootfs /sdcard/Download/rootfs /sdcard/Download; do
-  if [ -f "$C/device/linux-start.sh" ]; then
+  if [ -f "$C/device/core/linux-start.sh" ] || [ -f "$C/device/linux-start.sh" ]; then
     SRC="$C"
     break
   fi
-  if [ -f "$C/linux-start.sh" ]; then
+  if [ -f "$C/core/linux-start.sh" ] || [ -f "$C/linux-start.sh" ]; then
     SRC="$C"
     break
   fi
@@ -32,7 +32,7 @@ fi
 
 mkdir -p "$DST"
 
-# device/ ou raiz plana
+# device/ ou raiz plana; aceita a arvore categorizada e a estrutura antiga.
 DEV="$SRC/device"
 [ -d "$DEV" ] || DEV="$SRC"
 
@@ -46,42 +46,48 @@ strip_crlf() {
   tr -d "$CR" < "$_sf" > "$_sf.__nocr" && mv -f "$_sf.__nocr" "$_sf"
 }
 
-for f in common.sh install-rootfs.sh wipe-chroot.sh linux-start.sh \
-  linux-stop.sh linux-shell.sh linux-status.sh check-services.sh check-gpu.sh run-setup.sh bootstrap.sh \
-  setup-artix.sh 99-linux.sh install-autostart.sh install-dinit-services.sh dinit-test-svc.sh \
-  fix-pacman-sandbox.sh android-pacman-sandbox.sh fix-pacman-mirrors.sh artix-user.sh \
-  install-direnv.sh enable-archlinuxarm.sh   fix-dbus-chroot.sh \
-  fix-dinit-chroot.sh fix-elogind-chroot.sh fix-sshd-chroot.sh \
-  setup-xfce.sh run-setup-xfce.sh x11-start.sh x11-stop.sh xfce-x11-session.sh \
-  xfce-fit-windows.sh \
-  setup-gpu-hybris.sh run-setup-gpu-hybris.sh gpu-check.sh \
-  repair-libgcc.sh \
-  install-mesa25-android-mali.sh install-libhybris-opt.sh install-sysvk-opt.sh \
-  gpu-vulkan-run.sh gpu-run.sh gpu-egl-run.sh zink-run.sh gpu-desktop.sh \
-  test-dinit-network.sh; do
-  if [ -f "$DEV/$f" ]; then
-    if ! cp "$DEV/$f" "$DST/$f"; then
-      echo "!! falha cp $f"
+if [ -d "$DEV/core" ]; then
+  for category in core setup fix gpu user x11 deploy; do
+    [ -d "$DEV/$category" ] || continue
+    mkdir -p "$DST/$category"
+    for src_file in "$DEV/$category"/*.sh; do
+      [ -f "$src_file" ] || continue
+      name=${src_file##*/}
+      target="$DST/$category/$name"
+      if ! cp "$src_file" "$target"; then
+        echo "!! falha cp $src_file"
+        exit 1
+      fi
+      if ! strip_crlf "$target" || ! chmod 755 "$target"; then
+        echo "!! falha a preparar $target"
+        exit 1
+      fi
+      if ! ln -sfn "$category/$name" "$DST/$name"; then
+        echo "!! falha alias $DST/$name"
+        exit 1
+      fi
+      echo " ok $DST/$category/$name + alias $DST/$name"
+    done
+  done
+else
+  # Compatibilidade com pacotes antigos que ainda enviam device/ plano.
+  for src_file in "$DEV"/*.sh; do
+    [ -f "$src_file" ] || continue
+    name=${src_file##*/}
+    if ! cp "$src_file" "$DST/$name" || ! strip_crlf "$DST/$name" || ! chmod 755 "$DST/$name"; then
+      echo "!! falha a preparar $DST/$name"
       exit 1
     fi
-    if ! strip_crlf "$DST/$f"; then
-      echo "!! falha strip_crlf $DST/$f"
-      exit 1
-    fi
-    if ! chmod 755 "$DST/$f"; then
-      echo "!! falha chmod $DST/$f"
-      exit 1
-    fi
-    echo " ok $DST/$f"
-  else
-    echo " -- $f (ausente)"
-  fi
-done
+    echo " ok $DST/$name"
+  done
+fi
 
 # configs dinit (ficheiros de servico) — so em DST/dinit.d, nunca mnt/
-if [ -d "$DEV/dinit.d" ]; then
+if [ -d "$DEV/deploy/dinit.d" ] || [ -d "$DEV/dinit.d" ]; then
+  DINIT_SRC="$DEV/deploy/dinit.d"
+  [ -d "$DINIT_SRC" ] || DINIT_SRC="$DEV/dinit.d"
   mkdir -p "$DST/dinit.d"
-  if ! cp -R "$DEV/dinit.d/." "$DST/dinit.d/"; then
+  if ! cp -R "$DINIT_SRC/." "$DST/dinit.d/"; then
     echo "!! falha cp dinit.d/"
     exit 1
   fi
@@ -95,9 +101,11 @@ if [ -d "$DEV/dinit.d" ]; then
 fi
 
 # mirrorlist ARMtix + ALARM — so em DST/pacman.d, nunca mnt/
-if [ -d "$DEV/pacman.d" ]; then
+if [ -d "$DEV/deploy/pacman.d" ] || [ -d "$DEV/pacman.d" ]; then
+  PACMAN_SRC="$DEV/deploy/pacman.d"
+  [ -d "$PACMAN_SRC" ] || PACMAN_SRC="$DEV/pacman.d"
   mkdir -p "$DST/pacman.d"
-  if ! cp -R "$DEV/pacman.d/." "$DST/pacman.d/"; then
+  if ! cp -R "$PACMAN_SRC/." "$DST/pacman.d/"; then
     echo "!! falha cp pacman.d/"
     exit 1
   fi
@@ -111,9 +119,11 @@ if [ -d "$DEV/pacman.d" ]; then
 fi
 
 # companion Termux:X11 (loader.apk) — Android 14+ 
-if [ -d "$DEV/termux-x11" ]; then
+if [ -d "$DEV/deploy/termux-x11" ] || [ -d "$DEV/termux-x11" ]; then
+  TERMUX_X11_SRC="$DEV/deploy/termux-x11"
+  [ -d "$TERMUX_X11_SRC" ] || TERMUX_X11_SRC="$DEV/termux-x11"
   mkdir -p "$DST/termux-x11"
-  cp -R "$DEV/termux-x11/." "$DST/termux-x11/" 2>/dev/null || true
+  cp -R "$TERMUX_X11_SRC/." "$DST/termux-x11/" 2>/dev/null || true
   echo " ok termux-x11/"
 fi
 

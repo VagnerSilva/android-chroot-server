@@ -20,7 +20,7 @@
 # Depois: voltar a fazer prepare.sh / deploy.ps1 no PC.
 # ============================================================
 
-. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh"
+. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/../core/common.sh"
 
 AUTOSTART=/data/adb/service.d/99-linux.sh
 

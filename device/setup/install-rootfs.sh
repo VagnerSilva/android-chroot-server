@@ -14,7 +14,7 @@
 # ============================================================
 set -e
 
-. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh"
+. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/../core/common.sh"
 
 TERMUX_HOME=/data/data/com.termux/files/home
 TMP_DIR=/data/local/tmp

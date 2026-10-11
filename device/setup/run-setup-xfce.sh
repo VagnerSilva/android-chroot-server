@@ -9,7 +9,7 @@
 #   ARTIX_USER=alice /data/linux/run-setup-xfce.sh
 # ============================================================
 
-. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh"
+. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/../core/common.sh"
 
 SETUP_SRC=/data/linux/setup-xfce.sh
 [ -f "$SETUP_SRC" ] || SETUP_SRC="$(dirname "$0")/setup-xfce.sh"
@@ -26,7 +26,7 @@ strip_crlf "$ROOT/root/setup-xfce.sh"
 
 # mesa25 offline + instalador → /root no chroot
 DEPS_DIR=/data/linux/deps
-[ -d "$DEPS_DIR" ] || DEPS_DIR="$(dirname "$0")/deps"
+[ -d "$DEPS_DIR" ] || DEPS_DIR="$(dirname "$0")/../../deps"
 mkdir -p "$ROOT/root"
 if [ -f /data/linux/install-mesa25-android-mali.sh ]; then
   cp /data/linux/install-mesa25-android-mali.sh "$ROOT/root/install-mesa25-android-mali.sh"
@@ -54,7 +54,7 @@ if [ -f /data/linux/xfce-x11-session.sh ]; then
   chmod 755 "$ROOT/usr/local/bin/xfce-x11-session.sh"
 fi
 FIT_SRC=/data/linux/xfce-fit-windows.sh
-[ -f "$FIT_SRC" ] || FIT_SRC="$(dirname "$0")/xfce-fit-windows.sh"
+[ -f "$FIT_SRC" ] || FIT_SRC="$(dirname "$0")/../x11/xfce-fit-windows.sh"
 if [ -f "$FIT_SRC" ]; then
   mkdir -p "$ROOT/usr/local/bin" "$ROOT/root"
   cp "$FIT_SRC" "$ROOT/usr/local/bin/xfce-fit-windows.sh"

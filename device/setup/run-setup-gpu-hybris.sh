@@ -11,7 +11,7 @@
 # Rootfs com pacman partido (libgcc): /data/linux/repair-libgcc.sh (sem wipe)
 # ============================================================
 
-. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh"
+. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/../core/common.sh"
 
 SETUP_SRC=/data/linux/setup-gpu-hybris.sh
 [ -f "$SETUP_SRC" ] || SETUP_SRC="$(dirname "$0")/setup-gpu-hybris.sh"
@@ -42,7 +42,7 @@ if ! $BB chroot "$ROOT" /usr/bin/env -i PATH=/usr/bin:/bin HOME=/root \
   fi
   echo ">> a tentar repair-libgcc (sem wipe)"
   REPAIR=/data/linux/repair-libgcc.sh
-  [ -f "$REPAIR" ] || REPAIR="$(dirname "$0")/repair-libgcc.sh"
+  [ -f "$REPAIR" ] || REPAIR="$(dirname "$0")/../fix/repair-libgcc.sh"
   if [ -f "$REPAIR" ]; then
     sh "$REPAIR" || {
       echo "!! repair-libgcc falhou"
@@ -100,7 +100,7 @@ fi
 
 # deps offline: /data/linux/deps/ → $ROOT/root/ (chroot pode ser wipeado)
 DEPS_DIR=/data/linux/deps
-[ -d "$DEPS_DIR" ] || DEPS_DIR="$(dirname "$0")/deps"
+[ -d "$DEPS_DIR" ] || DEPS_DIR="$(dirname "$0")/../../deps"
 mkdir -p "$ROOT/root"
 
 copy_dep() {

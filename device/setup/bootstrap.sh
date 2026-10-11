@@ -26,7 +26,7 @@
 #   SKIP_GPU=0   para forcar GPU no bootstrap (nao recomendado nesta fase)
 # ============================================================
 
-. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh"
+. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/../core/common.sh"
 
 if [ "$(id -u)" != "0" ]; then
   echo "!! precisa ser root (su / KernelSU)"

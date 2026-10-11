@@ -2,7 +2,7 @@
 $ErrorActionPreference = "Stop"
 
 $Root = Split-Path -Parent $PSScriptRoot
-if (-not (Test-Path (Join-Path $Root "device\linux-start.sh"))) {
+if (-not (Test-Path (Join-Path $Root "device\core\linux-start.sh"))) {
   $Root = $PSScriptRoot
 }
 
@@ -12,9 +12,9 @@ if (-not $adb) {
 }
 
 foreach ($req in @(
-  "device\setup-gpu-hybris.sh",
-  "device\run-setup-gpu-hybris.sh",
-  "device\bootstrap.sh",
+  "device\setup\setup-gpu-hybris.sh",
+  "device\setup\run-setup-gpu-hybris.sh",
+  "device\setup\bootstrap.sh",
   "host\prepare.sh"
 )) {
   $p = Join-Path $Root $req
@@ -51,7 +51,7 @@ if (Test-Path (Join-Path $Root "README.md")) {
 }
 
 # sanity: prepare + bootstrap + hybris no sitio certo
-& adb shell "test -f $remote/host/prepare.sh && grep -q NUNCA $remote/host/prepare.sh && test -f $remote/device/bootstrap.sh && test -f $remote/device/setup-gpu-hybris.sh && test -f $remote/device/run-setup-gpu-hybris.sh && echo '>> deploy OK' || echo '!! deploy incompleto'"
+& adb shell "test -f $remote/host/prepare.sh && grep -q NUNCA $remote/host/prepare.sh && test -f $remote/device/core/linux-start.sh && test -f $remote/device/setup/bootstrap.sh && test -f $remote/device/setup/setup-gpu-hybris.sh && test -f $remote/device/setup/run-setup-gpu-hybris.sh && echo '>> deploy OK' || echo '!! deploy incompleto'"
 
 Write-Host ""
 Write-Host "No aparelho:"

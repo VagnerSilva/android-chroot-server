@@ -9,12 +9,12 @@
 #   3) ARTIX_USER=<user> /data/linux/run-setup-xfce.sh  (1a vez)
 # ============================================================
 
-. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh"
+. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/../core/common.sh"
 
 ensure_dirs
 
 START_SH="$BASE/linux-start.sh"
-[ -x "$START_SH" ] || START_SH="$(dirname "$0")/linux-start.sh"
+[ -x "$START_SH" ] || START_SH="$(dirname "$0")/../core/linux-start.sh"
 
 TERMUX_PREFIX=/data/data/com.termux/files/usr
 TERMUX_HOME=/data/data/com.termux/files/home
@@ -269,7 +269,7 @@ bind_x11_socket || exit 1
 
 # dinit xfce-x11
 DINIT_SRC="$BASE/dinit.d/xfce-x11"
-[ -f "$DINIT_SRC" ] || DINIT_SRC="$(dirname "$0")/dinit.d/xfce-x11"
+[ -f "$DINIT_SRC" ] || DINIT_SRC="$(dirname "$0")/../deploy/dinit.d/xfce-x11"
 mkdir -p "$ROOT/etc/dinit.d/boot.d" "$ROOT/var/log/dinit"
 if [ -f "$DINIT_SRC" ]; then
   cp "$DINIT_SRC" "$ROOT/etc/dinit.d/xfce-x11"

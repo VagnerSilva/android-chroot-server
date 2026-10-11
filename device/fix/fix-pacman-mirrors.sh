@@ -5,10 +5,10 @@
 # ============================================================
 set -e
 
-. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh"
+. /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/../core/common.sh"
 
 SRC_ML=/data/linux/pacman.d/mirrorlist
-[ -f "$SRC_ML" ] || SRC_ML="$(dirname "$0")/pacman.d/mirrorlist"
+[ -f "$SRC_ML" ] || SRC_ML="$(dirname "$0")/../deploy/pacman.d/mirrorlist"
 [ -f "$SRC_ML" ] || SRC_ML=/data/local/tmp/pacman.d/mirrorlist
 
 if [ ! -f "$SRC_ML" ]; then
