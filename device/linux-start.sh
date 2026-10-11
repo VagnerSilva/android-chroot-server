@@ -23,6 +23,7 @@ fi
 trap 'rmdir "$LOCK" 2>/dev/null' EXIT INT TERM
 
 rm -f "$RUN/stopped"
+rotate_boot_log "$LOG" 262144 || true
 
 if [ -f "$PIDF" ] && container_vivo "$(cat "$PIDF")"; then
   echo "ja esta rodando (pid $(cat "$PIDF"))"

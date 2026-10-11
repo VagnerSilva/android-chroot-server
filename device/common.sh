@@ -40,14 +40,147 @@ container_vivo() {
   return 1
 }
 
+# Helpers de erro reutilizaveis para scripts POSIX.
+die() {
+  printf '%s\n' "!! $*" >&2
+  exit 1
+}
+
+must() {
+  "$@"
+  status=$?
+  if [ "$status" -eq 0 ]; then
+    return 0
+  fi
+  printf '%s\n' "!! falha ao executar: $*" >&2
+  return "$status"
+}
+
 # Args de nsenter: so -m se nao houver PID namespace (kernel sem CONFIG_PID_NS).
 nsenter_ns_args() {
-  P="$1"
-  if [ -e "/proc/$P/ns/pid" ]; then
-    echo "-t $P -m -p"
-  else
-    echo "-t $P -m"
+  P="${1:-}"
+  case "$P" in
+    ""|*[!0-9]*)
+      printf '%s\n' "PID invalido: ${P:-<vazio>}" >&2
+      return 1
+      ;;
+  esac
+
+  if [ ! -d "/proc/$P" ]; then
+    printf '%s\n' "PID inexistente: $P" >&2
+    return 1
   fi
+
+  if [ -e "/proc/$P/ns/pid" ]; then
+    printf '%s\n' "-t $P -m -p"
+  else
+    printf '%s\n' "-t $P -m"
+  fi
+}
+
+run_in_chroot() {
+  [ -n "${PIDF:-}" ] || {
+    printf '%s\n' "PIDF nao definido" >&2
+    return 1
+  }
+  [ -n "${ROOT:-}" ] || {
+    printf '%s\n' "ROOT nao definido" >&2
+    return 1
+  }
+  [ -d "$ROOT" ] || {
+    printf '%s\n' "ROOT invalido: $ROOT" >&2
+    return 1
+  }
+  [ -n "${BB:-}" ] || {
+    printf '%s\n' "busybox nao definido" >&2
+    return 1
+  }
+  [ -x "$BB" ] || {
+    printf '%s\n' "busybox ausente: $BB" >&2
+    return 1
+  }
+  [ -f "$PIDF" ] || {
+    printf '%s\n' "PIDF ausente: $PIDF" >&2
+    return 1
+  }
+
+  PID=$(cat "$PIDF" 2>/dev/null || printf '')
+  [ -n "$PID" ] || {
+    printf '%s\n' "PID invalido em $PIDF" >&2
+    return 1
+  }
+
+  NSARGS=$(nsenter_ns_args "$PID") || return 1
+
+  "$BB" nsenter $NSARGS -- "$BB" chroot "$ROOT" /usr/bin/env -i \
+    HOME="${HOME:-/root}" TERM="${TERM:-linux}" LANG="${LANG:-C.UTF-8}" \
+    PATH="${PATH:-/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin}" \
+    "$@"
+  return $?
+}
+
+wait_for_container() {
+  timeout="${1:-10}"
+  case "$timeout" in
+    ""|*[!0-9]*)
+      printf '%s\n' "timeout invalido: ${timeout:-<vazio>}" >&2
+      return 1
+      ;;
+  esac
+
+  pid="${2:-}"
+  if [ -z "$pid" ] && [ -n "${PIDF:-}" ] && [ -f "$PIDF" ]; then
+    pid=$(cat "$PIDF" 2>/dev/null || printf '')
+  fi
+
+  case "$pid" in
+    ""|*[!0-9]*)
+      printf '%s\n' "PID do container invalido: ${pid:-<vazio>}" >&2
+      return 1
+      ;;
+  esac
+
+  i=0
+  while [ "$i" -lt "$timeout" ]; do
+    if kill -0 "$pid" 2>/dev/null; then
+      return 0
+    fi
+    i=$((i + 1))
+    sleep 1
+  done
+
+  return 1
+}
+
+rotate_boot_log() {
+  log_file="${1:-$LOG}"
+  limit="${2:-262144}"
+
+  [ -n "$log_file" ] || return 0
+  [ -f "$log_file" ] || return 0
+  case "$limit" in
+    ""|*[!0-9]*)
+      return 0
+      ;;
+  esac
+
+  size=$(wc -c < "$log_file" 2>/dev/null || printf '0')
+  case "$size" in
+    ""|*[!0-9]*)
+      size=0
+      ;;
+  esac
+
+  if [ "$size" -lt "$limit" ]; then
+    return 0
+  fi
+
+  if [ -f "$log_file.3" ]; then rm -f "$log_file.3" 2>/dev/null || true; fi
+  if [ -f "$log_file.2" ]; then mv "$log_file.2" "$log_file.3" 2>/dev/null || true; fi
+  if [ -f "$log_file.1" ]; then mv "$log_file.1" "$log_file.2" 2>/dev/null || true; fi
+  mv "$log_file" "$log_file.1" 2>/dev/null || true
+  : > "$log_file" 2>/dev/null || true
+  return 0
 }
 
 # Sync /etc/timezone + /etc/localtime from Android persist.sys.timezone.

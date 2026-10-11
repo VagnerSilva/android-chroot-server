@@ -99,12 +99,16 @@ case "${1:-start}" in
           "export DISPLAY='$X11_DISPLAY' XDG_RUNTIME_DIR='$RUNTIMEDIR' TMPDIR=/tmp XDG_SESSION_TYPE=x11; \
            unset SESSION_MANAGER DBUS_SESSION_BUS_ADDRESS; \
            unset HYBRIS_TLS_PATCH; \
+           [ -x /usr/local/bin/xfce-fit-windows.sh ] && \
+             ( sleep 2; exec /usr/local/bin/xfce-fit-windows.sh ) >/tmp/xfce-fit-windows.log 2>&1 & \
            exec /usr/local/bin/zink-run dbus-launch --exit-with-session startxfce4"
       fi
       exec su -l "$X11_USER" -s /bin/sh -c \
         "export DISPLAY='$X11_DISPLAY' XDG_RUNTIME_DIR='$RUNTIMEDIR' TMPDIR=/tmp XDG_SESSION_TYPE=x11; \
          unset SESSION_MANAGER DBUS_SESSION_BUS_ADDRESS; \
          unset HYBRIS_TLS_PATCH; \
+         [ -x /usr/local/bin/xfce-fit-windows.sh ] && \
+           ( sleep 2; exec /usr/local/bin/xfce-fit-windows.sh ) >/tmp/xfce-fit-windows.log 2>&1 & \
          exec /usr/local/bin/zink-run startxfce4"
     fi
 
@@ -113,6 +117,8 @@ case "${1:-start}" in
       "export DISPLAY='$X11_DISPLAY' XDG_RUNTIME_DIR='$RUNTIMEDIR' TMPDIR=/tmp XDG_SESSION_TYPE=x11; \
        unset SESSION_MANAGER DBUS_SESSION_BUS_ADDRESS; \
        unset HYBRIS_TLS_PATCH; \
+       [ -x /usr/local/bin/xfce-fit-windows.sh ] && \
+         ( sleep 2; exec /usr/local/bin/xfce-fit-windows.sh ) >/tmp/xfce-fit-windows.log 2>&1 & \
        unset GALLIUM_DRIVER MESA_LOADER_DRIVER_OVERRIDE; \
        export LD_LIBRARY_PATH=/opt/android-mali/lib; \
        export LIBGL_DRIVERS_PATH=/opt/android-mali/lib/dri; \
