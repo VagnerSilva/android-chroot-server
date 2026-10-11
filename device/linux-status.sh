@@ -12,6 +12,7 @@ STRICT="${STRICT:-0}"
 REQUIRE_X11="${REQUIRE_X11:-0}"
 REQUIRE_GPU="${REQUIRE_GPU:-1}"
 STATUS_RC=0
+set -eu
 
 ok()   { echo "  [ok]  $*"; }
 fail() { echo "  [!!]  $*"; STATUS_RC=1; }
@@ -50,10 +51,10 @@ CHROOT_TZ=
 TZ_OFF=
 if [ "$VIVO" = 1 ]; then
   PID=$(cat "$PIDF")
-  NSARGS=$(nsenter_ns_args "$PID")
+  NSARGS=$(nsenter_ns_args "$PID") || NSARGS=
   # shellcheck disable=SC2086
   TZ_OFF=$($BB nsenter $NSARGS -- $BB chroot "$ROOT" /usr/bin/env -i \
-    PATH=/usr/bin:/bin /bin/date '+%z' 2>/dev/null)
+    PATH=/usr/bin:/bin /bin/date '+%z' 2>/dev/null) || TZ_OFF=
 fi
 if [ -z "$AND_TZ" ]; then
   info "timezone (Android sem persist.sys.timezone)"
@@ -84,7 +85,7 @@ GPU_WRAP=0
 
 if [ "$VIVO" = 1 ]; then
   PID=$(cat "$PIDF")
-  NSARGS=$(nsenter_ns_args "$PID")
+  NSARGS=$(nsenter_ns_args "$PID") || NSARGS=
   # shellcheck disable=SC2086
   SVC_OUT=$($BB nsenter $NSARGS -- $BB chroot "$ROOT" /usr/bin/env -i \
     PATH=/usr/bin:/bin:/usr/sbin:/sbin /bin/sh -c '
@@ -132,7 +133,7 @@ if [ "$VIVO" = 1 ]; then
         echo "OK_x11=0"
         echo "  [--]  X11 socket :0 (Termux:X11 parado)"
       fi
-    ')
+    ') || SVC_OUT=
   echo "$SVC_OUT" | grep '  \[' || true
   echo "$SVC_OUT" | grep -q '^OK_sshd=1' && SVC_SSHD=1
   echo "$SVC_OUT" | grep -q '^OK_dbus=1' && SVC_DBUS=1
@@ -237,21 +238,21 @@ if [ "$VIVO" = 1 ]; then
       echo "GPU_BIND=$BIND"
       echo "GPU_ICD=$ICD"
       echo "GPU_WRAP=$WRAP"
-    ' 2>/dev/null)
+    ' 2>/dev/null) || GPU_LINE=
 
-  GPU_STATUS=$(echo "$GPU_LINE" | grep '^GPU_STATUS=' | cut -d= -f2-)
-  GPU_DRIVER=$(echo "$GPU_LINE" | grep '^GPU_DRIVER=' | cut -d= -f2-)
-  GPU_DEV=$(echo "$GPU_LINE" | grep '^GPU_DEV=' | cut -d= -f2-)
-  GPU_CARD=$(echo "$GPU_LINE" | grep '^GPU_CARD=' | cut -d= -f2-)
-  GPU_RENDER=$(echo "$GPU_LINE" | grep '^GPU_RENDER=' | cut -d= -f2-)
-  GPU_TREE=$(echo "$GPU_LINE" | grep '^GPU_TREE=' | cut -d= -f2-)
-  GPU_MESA25=$(echo "$GPU_LINE" | grep '^GPU_MESA25=' | cut -d= -f2-)
-  GPU_HYB=$(echo "$GPU_LINE" | grep '^GPU_HYB=' | cut -d= -f2-)
-  GPU_GLES=$(echo "$GPU_LINE" | grep '^GPU_GLES=' | cut -d= -f2-)
-  GPU_VK=$(echo "$GPU_LINE" | grep '^GPU_VK=' | cut -d= -f2-)
-  GPU_BIND=$(echo "$GPU_LINE" | grep '^GPU_BIND=' | cut -d= -f2-)
-  GPU_ICD=$(echo "$GPU_LINE" | grep '^GPU_ICD=' | cut -d= -f2-)
-  GPU_WRAP=$(echo "$GPU_LINE" | grep '^GPU_WRAP=' | cut -d= -f2-)
+  GPU_STATUS=$(echo "$GPU_LINE" | grep '^GPU_STATUS=' | cut -d= -f2-) || GPU_STATUS=
+  GPU_DRIVER=$(echo "$GPU_LINE" | grep '^GPU_DRIVER=' | cut -d= -f2-) || GPU_DRIVER=
+  GPU_DEV=$(echo "$GPU_LINE" | grep '^GPU_DEV=' | cut -d= -f2-) || GPU_DEV=
+  GPU_CARD=$(echo "$GPU_LINE" | grep '^GPU_CARD=' | cut -d= -f2-) || GPU_CARD=
+  GPU_RENDER=$(echo "$GPU_LINE" | grep '^GPU_RENDER=' | cut -d= -f2-) || GPU_RENDER=
+  GPU_TREE=$(echo "$GPU_LINE" | grep '^GPU_TREE=' | cut -d= -f2-) || GPU_TREE=
+  GPU_MESA25=$(echo "$GPU_LINE" | grep '^GPU_MESA25=' | cut -d= -f2-) || GPU_MESA25=
+  GPU_HYB=$(echo "$GPU_LINE" | grep '^GPU_HYB=' | cut -d= -f2-) || GPU_HYB=
+  GPU_GLES=$(echo "$GPU_LINE" | grep '^GPU_GLES=' | cut -d= -f2-) || GPU_GLES=
+  GPU_VK=$(echo "$GPU_LINE" | grep '^GPU_VK=' | cut -d= -f2-) || GPU_VK=
+  GPU_BIND=$(echo "$GPU_LINE" | grep '^GPU_BIND=' | cut -d= -f2-) || GPU_BIND=
+  GPU_ICD=$(echo "$GPU_LINE" | grep '^GPU_ICD=' | cut -d= -f2-) || GPU_ICD=
+  GPU_WRAP=$(echo "$GPU_LINE" | grep '^GPU_WRAP=' | cut -d= -f2-) || GPU_WRAP=
 
   case "$GPU_STATUS" in
     ok)

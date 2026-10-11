@@ -33,8 +33,9 @@ ensure_dirs() {
 
 # True if PID is our container (by chroot root or cmdline).
 container_vivo() {
-  P="$1"
+  P="${1:-}"
   [ -n "$P" ] && [ -d "/proc/$P" ] || return 1
+  [ -d "/proc/$P/root" ] || return 1
   [ "$(readlink "/proc/$P/root" 2>/dev/null)" = "$ROOT" ] && return 0
   $BB tr '\0' ' ' < "/proc/$P/cmdline" 2>/dev/null | grep -q "chroot '$ROOT'" && return 0
   return 1
@@ -142,7 +143,12 @@ wait_for_container() {
 
   i=0
   while [ "$i" -lt "$timeout" ]; do
-    if kill -0 "$pid" 2>/dev/null; then
+    if container_vivo "$pid"; then
+      return 0
+    fi
+    kill -0 "$pid" 2>/dev/null || return 1
+    child=$($BB pgrep -P "$pid" 2>/dev/null | head -n1)
+    if [ -n "$child" ] && container_vivo "$child"; then
       return 0
     fi
     i=$((i + 1))

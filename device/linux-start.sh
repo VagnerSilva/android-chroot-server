@@ -166,11 +166,14 @@ esac
 UPID=$!
 echo "$UPID" > "$PIDF"
 
-sleep 5
-if ! kill -0 "$UPID" 2>/dev/null; then
-  echo "!! processo unshare morreu — veja $LOG" | tee -a "$LOG"
-  echo "!! se [FAILED] boot / udev / modules / fsck:" | tee -a "$LOG"
-  echo "!!   /data/linux/fix-dinit-chroot.sh && /data/linux/linux-start.sh" | tee -a "$LOG"
+if ! wait_for_container 10 "$UPID"; then
+  if kill -0 "$UPID" 2>/dev/null; then
+    echo "!! timeout: container nao ficou pronto em 10s (pid unshare $UPID) — veja $LOG" | tee -a "$LOG"
+  else
+    echo "!! processo unshare morreu — veja $LOG" | tee -a "$LOG"
+    echo "!! se [FAILED] boot / udev / modules / fsck:" | tee -a "$LOG"
+    echo "!!   /data/linux/fix-dinit-chroot.sh && /data/linux/linux-start.sh" | tee -a "$LOG"
+  fi
   tail -n 40 "$LOG"
   rm -f "$PIDF"
   exit 1

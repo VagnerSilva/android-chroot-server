@@ -54,16 +54,26 @@ have_tty() {
 read_tty() {
   _prompt="$1"
   _var="$2"
+  _read_value=
   if [ -t 0 ]; then
     printf '%s' "$_prompt"
-    IFS= read -r "$_var" || eval "$_var="
+    IFS= read -r _read_value || _read_value=
   elif [ -c /dev/tty ]; then
     printf '%s' "$_prompt" > /dev/tty
-    IFS= read -r "$_var" < /dev/tty || eval "$_var="
+    IFS= read -r _read_value < /dev/tty || _read_value=
   else
-    eval "$_var="
+    case "$_var" in
+      ARTIX_USER) ARTIX_USER= ;;
+      _ans) _ans= ;;
+      *) return 2 ;;
+    esac
     return 1
   fi
+  case "$_var" in
+    ARTIX_USER) ARTIX_USER="$_read_value" ;;
+    _ans) _ans="$_read_value" ;;
+    *) return 2 ;;
+  esac
 }
 
 ensure_dirs

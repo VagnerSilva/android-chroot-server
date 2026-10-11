@@ -17,12 +17,18 @@
 
 . /data/linux/common.sh 2>/dev/null || . "$(dirname "$0")/common.sh"
 
+set -eu
+
 ensure_dirs
 
 SHELL_USER="${SHELL_USER:-}"
 while [ $# -gt 0 ]; do
   case "$1" in
     -u|--user)
+      if [ "$#" -lt 2 ]; then
+        echo "!! $1 exige um utilizador"
+        exit 1
+      fi
       SHELL_USER="$2"
       shift 2
       ;;
@@ -62,6 +68,7 @@ else
 fi
 
 # comando a executar dentro da sessao
+SHELL_CMD="${SHELL_CMD:-}"
 if [ -n "$SHELL_CMD" ]; then
   INNER_CMD="$SHELL_CMD"
 else
@@ -91,7 +98,7 @@ fi
 
 enter_alive() {
   PID=$(cat "$PIDF")
-  NSARGS=$(nsenter_ns_args "$PID")
+  NSARGS=$(nsenter_ns_args "$PID") || return 1
   echo ">> entrando no namespace (pid $PID, nsenter $NSARGS)"
   # shellcheck disable=SC2086
   # Com SHELL_CMD: nao fazer exec — o caller (ex. run-setup.sh) precisa continuar.
@@ -119,26 +126,26 @@ enter_alive() {
 
 enter_temp() {
   echo ">> container parado — chroot temporario de setup"
-  mount_rootfs_rw || exit 1
+  must mount_rootfs_rw || exit 1
 
-  $BB mount --bind /dev "$ROOT/dev" 2>/dev/null
+  $BB mount --bind /dev "$ROOT/dev" 2>/dev/null || true
   mkdir -p "$ROOT/dev/pts" "$ROOT/dev/shm"
-  $BB mount -t devpts -o gid=5,mode=620 devpts "$ROOT/dev/pts" 2>/dev/null
-  $BB mount -t proc proc "$ROOT/proc" 2>/dev/null
-  $BB mount -t sysfs sysfs "$ROOT/sys" 2>/dev/null
-  $BB mount -t tmpfs -o mode=755 tmpfs "$ROOT/run" 2>/dev/null
-  $BB mount -t tmpfs -o mode=1777 tmpfs "$ROOT/tmp" 2>/dev/null
+  $BB mount -t devpts -o gid=5,mode=620 devpts "$ROOT/dev/pts" 2>/dev/null || true
+  $BB mount -t proc proc "$ROOT/proc" 2>/dev/null || true
+  $BB mount -t sysfs sysfs "$ROOT/sys" 2>/dev/null || true
+  $BB mount -t tmpfs -o mode=755 tmpfs "$ROOT/run" 2>/dev/null || true
+  $BB mount -t tmpfs -o mode=1777 tmpfs "$ROOT/tmp" 2>/dev/null || true
 
   cleanup() {
-    $BB umount "$ROOT/tmp" 2>/dev/null
-    $BB umount "$ROOT/run" 2>/dev/null
-    $BB umount "$ROOT/sys" 2>/dev/null
-    $BB umount "$ROOT/proc" 2>/dev/null
-    $BB umount "$ROOT/dev/pts" 2>/dev/null
-    $BB umount "$ROOT/dev" 2>/dev/null
-    $BB umount "$ROOT" 2>/dev/null
+    $BB umount "$ROOT/tmp" 2>/dev/null || true
+    $BB umount "$ROOT/run" 2>/dev/null || true
+    $BB umount "$ROOT/sys" 2>/dev/null || true
+    $BB umount "$ROOT/proc" 2>/dev/null || true
+    $BB umount "$ROOT/dev/pts" 2>/dev/null || true
+    $BB umount "$ROOT/dev" 2>/dev/null || true
+    $BB umount "$ROOT" 2>/dev/null || true
     for L in $($BB losetup -a 2>/dev/null | grep rootfs.img | cut -d: -f1); do
-      $BB losetup -d "$L" 2>/dev/null
+      $BB losetup -d "$L" 2>/dev/null || true
     done
   }
   trap cleanup EXIT INT TERM
@@ -153,7 +160,7 @@ enter_temp() {
 if [ "$SHELL_USER" != root ]; then
   if [ -f "$PIDF" ] && container_vivo "$(cat "$PIDF")"; then
     PID=$(cat "$PIDF")
-    NSARGS=$(nsenter_ns_args "$PID")
+    NSARGS=$(nsenter_ns_args "$PID") || exit 1
     # shellcheck disable=SC2086
     if ! $BB nsenter $NSARGS -- $BB chroot "$ROOT" /usr/bin/id "$SHELL_USER" >/dev/null 2>&1; then
       echo "!! utilizador nao existe: $SHELL_USER"
