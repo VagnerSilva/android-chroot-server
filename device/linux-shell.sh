@@ -98,30 +98,23 @@ fi
 
 enter_alive() {
   PID=$(cat "$PIDF")
-  NSARGS=$(nsenter_ns_args "$PID") || return 1
-  echo ">> entrando no namespace (pid $PID, nsenter $NSARGS)"
-  # shellcheck disable=SC2086
+  echo ">> entrando no namespace (pid $PID)"
   # Com SHELL_CMD: nao fazer exec — o caller (ex. run-setup.sh) precisa continuar.
   # Propagar DISPLAY se definido (Zink/Vulkan X11 durante setup)
   _ENV_DISPLAY=
   [ -n "${DISPLAY:-}" ] && _ENV_DISPLAY="DISPLAY=$DISPLAY"
   if [ -n "$SHELL_CMD" ]; then
-    # shellcheck disable=SC2086
-    $BB nsenter $NSARGS -- \
-      $BB chroot "$ROOT" /usr/bin/env -i \
-        TERM="${TERM:-linux}" LANG=C.UTF-8 \
-        PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-        $_ENV_DISPLAY \
-        /bin/sh -c "$RUN_AS"
+    if [ -n "$_ENV_DISPLAY" ]; then
+      DISPLAY="$DISPLAY" run_in_chroot /bin/sh -c "$RUN_AS"
+    else
+      run_in_chroot /bin/sh -c "$RUN_AS"
+    fi
     return $?
   fi
-  # shellcheck disable=SC2086
-  exec $BB nsenter $NSARGS -- \
-    $BB chroot "$ROOT" /usr/bin/env -i \
-      TERM="${TERM:-linux}" LANG=C.UTF-8 \
-      PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-      $_ENV_DISPLAY \
-      /bin/sh -c "$RUN_AS"
+  if [ -n "$_ENV_DISPLAY" ]; then
+    DISPLAY="$DISPLAY" exec run_in_chroot /bin/sh -c "$RUN_AS"
+  fi
+  exec run_in_chroot /bin/sh -c "$RUN_AS"
 }
 
 enter_temp() {
@@ -159,10 +152,7 @@ enter_temp() {
 # validar user se nao for root (precisa container ou imagem montada)
 if [ "$SHELL_USER" != root ]; then
   if [ -f "$PIDF" ] && container_vivo "$(cat "$PIDF")"; then
-    PID=$(cat "$PIDF")
-    NSARGS=$(nsenter_ns_args "$PID") || exit 1
-    # shellcheck disable=SC2086
-    if ! $BB nsenter $NSARGS -- $BB chroot "$ROOT" /usr/bin/id "$SHELL_USER" >/dev/null 2>&1; then
+    if ! run_in_chroot /usr/bin/id "$SHELL_USER" >/dev/null 2>&1; then
       echo "!! utilizador nao existe: $SHELL_USER"
       echo "   crie com: /data/linux/artix-user.sh create $SHELL_USER <senha>"
       exit 1

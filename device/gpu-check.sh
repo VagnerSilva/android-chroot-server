@@ -146,5 +146,5 @@ echo "FAIL — GLES Mali nao activo"
 echo "  1) /data/linux/linux-start.sh"
 echo "  2) /data/linux/run-setup-gpu-hybris.sh"
 echo "  se pacman partido: YES=1 /data/linux/wipe-chroot.sh && /data/linux/bootstrap.sh"
-echo "  NAO use run-setup-gpu-mediatek.sh (LEGACY)"
+echo "  scripts legacy em device/_legacy/ — nao fazem parte do fluxo suportado"
 exit 1

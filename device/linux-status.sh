@@ -50,11 +50,7 @@ CHROOT_TZ=
 [ -f "$ROOT/etc/timezone" ] && CHROOT_TZ=$(tr -d '\n' < "$ROOT/etc/timezone")
 TZ_OFF=
 if [ "$VIVO" = 1 ]; then
-  PID=$(cat "$PIDF")
-  NSARGS=$(nsenter_ns_args "$PID") || NSARGS=
-  # shellcheck disable=SC2086
-  TZ_OFF=$($BB nsenter $NSARGS -- $BB chroot "$ROOT" /usr/bin/env -i \
-    PATH=/usr/bin:/bin /bin/date '+%z' 2>/dev/null) || TZ_OFF=
+  TZ_OFF=$(run_in_chroot /bin/date '+%z' 2>/dev/null || printf '')
 fi
 if [ -z "$AND_TZ" ]; then
   info "timezone (Android sem persist.sys.timezone)"
@@ -84,56 +80,7 @@ SVC_X11=0
 GPU_WRAP=0
 
 if [ "$VIVO" = 1 ]; then
-  PID=$(cat "$PIDF")
-  NSARGS=$(nsenter_ns_args "$PID") || NSARGS=
-  # shellcheck disable=SC2086
-  SVC_OUT=$($BB nsenter $NSARGS -- $BB chroot "$ROOT" /usr/bin/env -i \
-    PATH=/usr/bin:/bin:/usr/sbin:/sbin /bin/sh -c '
-      for s in sshd dbus elogind; do
-        if dinitctl is-started "$s" >/dev/null 2>&1; then
-          echo "OK_$s=1"
-          echo "  [ok]  $s"
-        else
-          echo "OK_$s=0"
-          if [ -e /etc/dinit.d/"$s" ]; then
-            echo "  [!!]  $s"
-            if [ "$s" = "sshd" ]; then
-              # NOTA: este bloco corre dentro de sh -c '...' — NAO usar aspas
-              # simples aninhadas (partem o script no Android/BusyBox).
-              echo "  [--]  sshd diag: bin=$(command -v sshd 2>/dev/null || echo AUSENTE)"
-              echo "  [--]  sshd diag: unit=$(head -n5 /etc/dinit.d/sshd 2>/dev/null | tr "\n" "|")"
-              ST=$(dinitctl status sshd 2>&1 | head -n4 | tr "\n" ";")
-              echo "  [--]  sshd diag: status=$ST"
-              if [ -f /var/log/dinit/sshd.log ]; then
-                echo "  [--]  sshd.log (ultimas):"
-                tail -n 8 /var/log/dinit/sshd.log 2>/dev/null | sed "s/^/         /"
-              else
-                echo "  [--]  sshd.log ausente"
-              fi
-            fi
-          fi
-        fi
-      done
-      if [ -S /run/dbus/system_bus_socket ]; then
-        echo "OK_dbus_sock=1"
-        echo "  [ok]  dbus socket"
-      else
-        echo "OK_dbus_sock=0"
-        echo "  [!!]  dbus socket"
-      fi
-      if [ -S /tmp/.X11-unix/X0 ]; then
-        echo "OK_x11=1"
-        echo "  [ok]  X11 socket :0"
-        if dinitctl is-started xfce-x11 >/dev/null 2>&1; then
-          echo "  [ok]  xfce-x11"
-        elif [ -e /etc/dinit.d/xfce-x11 ]; then
-          echo "  [!!]  xfce-x11"
-        fi
-      else
-        echo "OK_x11=0"
-        echo "  [--]  X11 socket :0 (Termux:X11 parado)"
-      fi
-    ') || SVC_OUT=
+  SVC_OUT=$("$BASE/check-services.sh" 2>/dev/null || true)
   echo "$SVC_OUT" | grep '  \[' || true
   echo "$SVC_OUT" | grep -q '^OK_sshd=1' && SVC_SSHD=1
   echo "$SVC_OUT" | grep -q '^OK_dbus=1' && SVC_DBUS=1
@@ -156,90 +103,7 @@ if [ "$VIVO" = 1 ]; then
     ok "Termux:X11 DISPLAY=:0"
   fi
 
-  # GPU: camadas separadas — critério precoce = GLES (artix-gpu-gles.ok)
-  # shellcheck disable=SC2086
-  GPU_LINE=$($BB nsenter $NSARGS -- $BB chroot "$ROOT" /usr/bin/env -i \
-    PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-    HOME=/root TERM=linux LANG=C.UTF-8 DISPLAY="${DISPLAY:-:0}" \
-    /bin/sh -c '
-      DEV=0
-      ls /dev/mali0 >/dev/null 2>&1 && DEV=1
-      CARD=0
-      ls /dev/dri/card0 >/dev/null 2>&1 && CARD=1
-      RENDER=0
-      ls /sys/class/drm/renderD* >/dev/null 2>&1 && RENDER=1
-      TREE=0
-      [ -d /opt/android-mali/vendor/lib64 ] && TREE=1
-      MESA25=0
-      { [ -f /etc/artix-mesa25.ok ] || [ -f /opt/android-mali/lib/libgallium-25.1.2.so ]; } && MESA25=1
-      HYB=0
-      { [ -d /opt/libhybris ] || [ -d /usr/lib/libhybris ]; } && HYB=1
-      GLES_MARK=0
-      [ -f /etc/artix-gpu-gles.ok ] && GLES_MARK=1
-      VK_MARK=0
-      [ -f /etc/artix-gpu-hybris.ok ] && VK_MARK=1
-      BIND=0
-      [ -d /mnt/vendor/lib64 ] && BIND=1
-      ICD=0
-      WRAP=0
-      [ -f /etc/artix-gpu.conf ] && . /etc/artix-gpu.conf
-      [ -n "${GPU_ICD_FILE:-}" ] && [ -f "$GPU_ICD_FILE" ] && ICD=1
-      if [ -x /usr/local/bin/gpu-egl-run ] || [ -x /usr/local/bin/gpu-vulkan-run ]; then
-        WRAP=1
-      fi
-
-      GLES_NAME=""
-      if [ "$GLES_MARK" = 1 ]; then
-        GLES_NAME=$(grep "^RENDERER=" /etc/artix-gpu-gles.ok 2>/dev/null | head -n1 | cut -d= -f2-)
-        [ -n "$GLES_NAME" ] || GLES_NAME="Mali (gles.ok)"
-      fi
-
-      VK_NAME=""
-      if [ "$VK_MARK" = 1 ] && [ -x /usr/local/bin/gpu-vulkan-run ] && command -v vulkaninfo >/dev/null 2>&1; then
-        export XDG_RUNTIME_DIR=/tmp TMPDIR=/tmp HYBRIS_TLS_PATCH=vulkan.mali.so
-        mkdir -p /tmp
-        (gpu-vulkan-run vulkaninfo --summary >/tmp/vk-status.txt 2>/tmp/vk-status.err) || true
-        VK_FULL=$(cat /tmp/vk-status.txt 2>/dev/null | head -n 40)
-        if echo "$VK_FULL" | grep -qiE "Mali-G[0-9]+|physicalDevices: count = [1-9]"; then
-          VK_NAME=$(echo "$VK_FULL" | grep -oE "Mali-G[0-9]+[^[:space:]]*" | head -n1)
-          [ -n "$VK_NAME" ] || VK_NAME="Mali (hybris)"
-        fi
-      fi
-
-      DRIVER="nao configurado"
-      STATUS=fail
-      if [ -n "$VK_NAME" ] && [ "$GLES_MARK" = 1 ]; then
-        DRIVER="gles+vulkan: $VK_NAME"
-        STATUS=ok
-      elif [ "$GLES_MARK" = 1 ]; then
-        DRIVER="gles: ${GLES_NAME:-Mali}"
-        STATUS=ok
-      elif [ "$WRAP" = 0 ]; then
-        DRIVER="setup-gpu-hybris pendente"
-        STATUS=info
-      elif [ "$DEV" = 1 ] && [ "$TREE" = 0 ]; then
-        DRIVER="mali0 ok; /opt/android-mali pendente"
-        STATUS=fail
-      else
-        DRIVER="sem GLES Mali (corra run-setup-gpu-hybris)"
-        STATUS=fail
-      fi
-
-      echo "GPU_STATUS=$STATUS"
-      echo "GPU_DRIVER=$DRIVER"
-      echo "GPU_DEV=$DEV"
-      echo "GPU_CARD=$CARD"
-      echo "GPU_RENDER=$RENDER"
-      echo "GPU_TREE=$TREE"
-      echo "GPU_MESA25=$MESA25"
-      echo "GPU_HYB=$HYB"
-      echo "GPU_GLES=$GLES_MARK"
-      echo "GPU_VK=$VK_MARK"
-      echo "GPU_BIND=$BIND"
-      echo "GPU_ICD=$ICD"
-      echo "GPU_WRAP=$WRAP"
-    ' 2>/dev/null) || GPU_LINE=
-
+  GPU_LINE=$("$BASE/check-gpu.sh" 2>/dev/null || true)
   GPU_STATUS=$(echo "$GPU_LINE" | grep '^GPU_STATUS=' | cut -d= -f2-) || GPU_STATUS=
   GPU_DRIVER=$(echo "$GPU_LINE" | grep '^GPU_DRIVER=' | cut -d= -f2-) || GPU_DRIVER=
   GPU_DEV=$(echo "$GPU_LINE" | grep '^GPU_DEV=' | cut -d= -f2-) || GPU_DEV=

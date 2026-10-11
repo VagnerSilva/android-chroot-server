@@ -18,16 +18,9 @@ fi
 if [ -f "$PIDF" ]; then
   PID=$(cat "$PIDF" 2>/dev/null || printf '')
   if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
-    NSARGS=$(nsenter_ns_args "$PID" 2>/dev/null) || NSARGS=
-    if [ -n "$NSARGS" ]; then
-      echo ">> tentando dinitctl shutdown via nsenter ($NSARGS)"
-    # shellcheck disable=SC2086
-      $BB nsenter $NSARGS -- \
-        $BB chroot "$ROOT" /usr/bin/dinitctl shutdown 2>/dev/null \
-        || $BB nsenter $NSARGS -- \
-             $BB chroot "$ROOT" /bin/dinitctl shutdown 2>/dev/null \
-        || true
-    fi
+    echo ">> tentando dinitctl shutdown via run_in_chroot"
+    run_in_chroot /usr/bin/dinitctl shutdown 2>/dev/null || \
+      run_in_chroot /bin/dinitctl shutdown 2>/dev/null || true
     kill -TERM "$PID" 2>/dev/null || true
     i=0
     while kill -0 "$PID" 2>/dev/null && [ $i -lt 20 ]; do

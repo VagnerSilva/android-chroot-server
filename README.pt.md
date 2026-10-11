@@ -333,7 +333,7 @@ DISPLAY=:0 gpu-vulkan-run vkcube   # apos hybris.ok; vulkaninfo por ultimo
 
 `STRICT=1` considera **GPU OK** com `artix-gpu-gles.ok` (GLES Mali). Vulkan/Zink não são requisito do gate precoce.
 
-`setup-gpu-mediatek.sh` é **LEGACY** — não usar no bootstrap.
+Os scripts legacy do GPU MediaTek foram movidos para `device/_legacy/` e não fazem parte do bootstrap suportado.
 
 SELinux a bloquear GPU:
 
@@ -368,7 +368,6 @@ dmesg | grep -iE 'avc|mali|gpu'
 | Desktop GPU (Zink) | `/data/linux/gpu-desktop.sh` |
 | Desktop CPU (softGL) | `/data/linux/gpu-desktop.sh cpu` |
 | Parar X11/XFCE | `/data/linux/gpu-desktop.sh stop` ou `x11-stop.sh` |
-| Setup GPU MTK (**LEGACY** — nao usar) | `/data/linux/run-setup-gpu-mediatek.sh` |
 | Setup GPU hybris (GLES-first) | `/data/linux/run-setup-gpu-hybris.sh` |
 | Check GPU | `/data/linux/gpu-check.sh` / `gpu-desktop.sh status` |
 | GLES Mali | `gpu-egl-run /tmp/mali-egl-test` |
