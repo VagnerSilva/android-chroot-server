@@ -1,8 +1,8 @@
 #!/bin/sh
-# ============================================================
-# xfce-fit-windows.sh — limita janelas ao workarea (Termux:X11)
-# Autostart XFCE; DISPLAY do ambiente da sessao.
-# ============================================================
+# Purpose: clamp visible XFCE windows to the current X11 work area.
+# Prerequisites: run in an active X11 session with xprop, xdotool, and xdpyinfo available.
+# Inputs: DISPLAY from the session environment (defaults to :0).
+# Outputs: adjusts eligible window geometry through xdotool; no files are written.
 : "${DISPLAY:=:0}"
 export DISPLAY
 

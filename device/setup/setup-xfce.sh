@@ -1,12 +1,8 @@
 #!/bin/sh
-# ============================================================
-# setup-xfce.sh — corre DENTRO do chroot Artix
-# Instala XFCE4 para Termux:X11 (GPU). Sem TigerVNC/llvmpipe.
-#
-# Env:
-#   ARTIX_USER     user alvo (default: primeiro em /home)
-#   X11_DISPLAY    default :0
-# ============================================================
+# Purpose: install and configure XFCE for the Termux:X11 session inside Artix.
+# Prerequisites: run inside the chroot as root with pacman network access and an existing user.
+# Inputs: ARTIX_USER (optional; defaults to the first /home user), X11_DISPLAY (optional; defaults to :0).
+# Outputs: installs XFCE packages and writes the XFCE/X11 session configuration in the chroot.
 set -e
 
 echo ">> setup XFCE + Termux:X11"

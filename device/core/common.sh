@@ -1,5 +1,8 @@
 #!/system/bin/sh
-# Sourced by other scripts. Paths and busybox for KernelSU.
+# Purpose: shared paths, BusyBox selection, and helpers for device scripts.
+# Prerequisites: Android shell with KernelSU/Magisk BusyBox; source from a caller.
+# Inputs: caller environment and optional helper arguments (paths, PIDs, commands).
+# Outputs: exported Android PATH, shared path variables, and callable shell helpers.
 
 BASE=/data/linux
 IMG="$BASE/rootfs.img"
