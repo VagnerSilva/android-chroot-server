@@ -52,10 +52,26 @@ pacman -Sy --noconfirm --needed glibc || pacman -S --noconfirm glibc || {
   exit 1
 }
 
-# Mesa 25.1.2 overlay (/opt/android-mali) — NAO instalar mesa>=26 do pacman
-# (free(): invalid pointer / size com softGL e hybris)
+echo ">> pacman: xfce4 + mesa-utils (sem mesa pacman / sem tigervnc)"
+XFCE_PACKAGES=$(pacman -Sgq xfce4) || {
+  echo "!! nao foi possivel listar o grupo xfce4"
+  exit 1
+}
+GOODIES_PACKAGES=$(pacman -Sgq xfce4-goodies) || {
+  echo "!! nao foi possivel listar o grupo xfce4-goodies"
+  exit 1
+}
+if [ -z "$XFCE_PACKAGES" ] || [ -z "$GOODIES_PACKAGES" ]; then
+  echo "!! grupo xfce4 ou xfce4-goodies vazio"
+  exit 1
+fi
+# shellcheck disable=SC2086
+pacman -Sy --noconfirm --needed --overwrite='*' \
+  $XFCE_PACKAGES $GOODIES_PACKAGES mesa-utils dbus xdotool xorg-xprop xorg-xdpyinfo
+
+# mesa-utils depende do pacote mesa; reaplicar o overlay por ultimo remove Mesa >=26.
 if [ -f /root/install-mesa25-android-mali.sh ]; then
-  echo ">> mesa25 overlay (em vez de pacman mesa 26)"
+  echo ">> mesa25 overlay (apos pacman; remover mesa>=26)"
   /bin/bash /root/install-mesa25-android-mali.sh || {
     echo "!! install-mesa25-android-mali falhou"
     exit 1
@@ -64,12 +80,6 @@ else
   echo "!! /root/install-mesa25-android-mali.sh ausente — corre prepare + run-setup-xfce"
   exit 1
 fi
-
-echo ">> pacman: xfce4 + mesa-utils (sem mesa pacman / sem tigervnc)"
-pacman -Sy --noconfirm --needed --overwrite='*' \
-  xfce4 xfce4-goodies mesa-utils dbus wmctrl xorg-xprop xorg-xdpyinfo \
-  || pacman -S --noconfirm --needed --overwrite='*' \
-  xfce4 xfce4-goodies mesa-utils dbus wmctrl xorg-xprop xorg-xdpyinfo
 
 mkdir -p "$HOME_DIR/.config/xfce4/xfconf/xfce-perchannel-xml" \
   /var/log/dinit /usr/local/bin /etc/dinit.d/boot.d

@@ -44,8 +44,14 @@ fit_once() {
   ax=$1 ay=$2 aw=$3 ah=$4
   [ "$aw" -gt 0 ] 2>/dev/null && [ "$ah" -gt 0 ] 2>/dev/null || return 0
 
-  wmctrl -lG 2>/dev/null | while read -r wid _desk wx wy ww wh _rest; do
-    [ -n "$wid" ] && [ -n "$wh" ] || continue
+  windows=$(xdotool search --onlyvisible --name '.*' 2>/dev/null) || windows=
+  for wid in $windows; do
+    [ -n "$wid" ] || continue
+    geometry=$(xdotool getwindowgeometry --shell "$wid" 2>/dev/null) || continue
+    # shellcheck disable=SC2086
+    set -- $(printf '%s\n' "$geometry" | awk -F= '/^(X|Y|WIDTH|HEIGHT)=/{print $2}')
+    [ "$#" -eq 4 ] || continue
+    wx=$1 wy=$2 ww=$3 wh=$4
     [ "$ww" -gt 0 ] 2>/dev/null || continue
     [ "$wh" -gt 0 ] 2>/dev/null || continue
     skip_window "$wid" && continue
@@ -66,12 +72,13 @@ fit_once() {
     if [ "$nx" -eq "$wx" ] && [ "$ny" -eq "$wy" ] && [ "$nw" -eq "$ww" ] && [ "$nh" -eq "$wh" ]; then
       continue
     fi
-    wmctrl -i -r "$wid" -e "0,$nx,$ny,$nw,$nh" 2>/dev/null || true
+    xdotool windowmove "$wid" "$nx" "$ny" 2>/dev/null || true
+    xdotool windowsize "$wid" "$nw" "$nh" 2>/dev/null || true
   done
 }
 
-if ! command -v wmctrl >/dev/null 2>&1; then
-  echo "!! xfce-fit-windows: wmctrl ausente" >&2
+if ! command -v xdotool >/dev/null 2>&1; then
+  echo "!! xfce-fit-windows: xdotool ausente" >&2
   exit 1
 fi
 

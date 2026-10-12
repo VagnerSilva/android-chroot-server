@@ -116,7 +116,7 @@ run_in_chroot() {
 
   "$BB" nsenter $NSARGS -- "$BB" chroot "$ROOT" /usr/bin/env -i \
     HOME="${HOME:-/root}" TERM="${TERM:-linux}" LANG="${LANG:-C.UTF-8}" \
-    PATH="${PATH:-/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin}" \
+    PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
     "$@"
   return $?
 }
