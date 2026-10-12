@@ -57,8 +57,8 @@ mkdir -p "$ROOT/mnt/android" "$ROOT/mnt/vendor" "$ROOT/mnt/system" "$ROOT/mnt/sy
   "$ROOT/dev/shm" "$ROOT/sys/fs/cgroup"
 
 # script interno: binds + chroot + init
-# /mnt/{vendor,system,apex} = EXTRAÇÃO para /opt/android-mali (nao requisito runtime GPU)
-# Binds na raiz /system /vendor: so se /opt/android-mali ainda nao existir (compat)
+# /mnt/{vendor,system,apex} = EXTRAÇÃO para /opt/android-mali
+# /vendor tambem e necessario para o mapper HAL carregado por caminho absoluto.
 INNER="$RUN/inner-start.sh"
 cat > "$INNER" <<EOF
 #!/system/bin/sh
@@ -82,7 +82,7 @@ mkdir -p "\$ROOT/dev/shm" "\$ROOT/dev/pts"
 \$BB mount -t tmpfs -o mode=1777 tmpfs "\$ROOT/tmp"
 \$BB mount --bind /data/media/0 "\$ROOT/mnt/android" 2>/dev/null
 mkdir -p "\$ROOT/mnt/vendor" "\$ROOT/mnt/system" "\$ROOT/mnt/system_ext" "\$ROOT/mnt/apex"
-# Extract-only mounts (runtime GPU = /opt/android-mali)
+# Mounts para extracao do runtime GPU
 if [ -d /vendor ]; then
   \$BB mount --bind /vendor "\$ROOT/mnt/vendor" 2>/dev/null
   \$BB mount -o remount,ro,bind "\$ROOT/mnt/vendor" 2>/dev/null
@@ -99,13 +99,14 @@ if [ -d /apex ]; then
   \$BB mount --rbind /apex "\$ROOT/mnt/apex" 2>/dev/null \
     || \$BB mount --bind /apex "\$ROOT/mnt/apex" 2>/dev/null
 fi
-# Compat legado: binds na raiz so sem arvore isolada
+if [ -d /vendor ]; then
+  mkdir -p "\$ROOT/vendor" || exit 1
+  \$BB mount --bind /vendor "\$ROOT/vendor" || exit 1
+  \$BB mount -o remount,ro,bind "\$ROOT/vendor" || exit 1
+fi
+# Compat legado: /system na raiz so sem arvore isolada
 if [ ! -d "\$ROOT/opt/android-mali/vendor/lib64" ]; then
-  mkdir -p "\$ROOT/system" "\$ROOT/vendor"
-  if [ -d /vendor ]; then
-    \$BB mount --bind /vendor "\$ROOT/vendor" 2>/dev/null
-    \$BB mount -o remount,ro,bind "\$ROOT/vendor" 2>/dev/null
-  fi
+  mkdir -p "\$ROOT/system"
   if [ -d /system ]; then
     \$BB mount --bind /system "\$ROOT/system" 2>/dev/null
     \$BB mount -o remount,ro,bind "\$ROOT/system" 2>/dev/null

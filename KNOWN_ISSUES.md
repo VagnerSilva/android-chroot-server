@@ -1,5 +1,33 @@
 # Known Issues
 
+## Mesa 25 Zink mapper path (fixed 2026-10-12)
+
+Zink `glxinfo -B` aborted with exit 134 and
+`library "/vendor/lib64/hw/mapper.mediatek.so" not found` when the boot flow
+omitted the root-level `/vendor` bind because `/opt/android-mali/vendor/lib64`
+already existed. The mapper was present in the staging tree, but the runtime
+required its absolute `/vendor` path.
+
+`device/core/linux-start.sh` now binds the Android vendor directory read-only
+at the chroot's `/vendor`, independently of the staging tree. The legacy
+`/system` bind remains conditional. `device/gpu/check-mesa25.sh` now reports
+the exit code and stderr on Zink failure and does not report a heap pass after
+an unsuccessful Zink invocation.
+
+The fix was applied to the active container without restarting XFCE. The full
+Mesa 25 check returned `RESULT ok=12 fail=0` and `ENV_OK`. A 60-second Zink
+`glxgears` test produced frames, reached its expected timeout (124), and kept
+the original XFCE session alive. `/vendor` was confirmed read-only. The
+installed boot script was patched without updating its older common helpers;
+the backup is `/data/linux/mesa25-fix-backup-BJC305`. A container restart has
+not yet been tested with this fix.
+
+The Mali-G615 still reports missing Zink features, including `logicOp`,
+`fillModeNonSolid`, `shaderClipDistance`, and a drawing warning for
+`VK_EXT_depth_clip_enable`. This fix restores Mesa 25.1.2 initialization and
+drawing at the observed OpenGL 3.1 level; it does not establish visual
+correctness for all applications or OpenGL 4.6 support.
+
 ## Mesa 26 on Android Mali
 
 The current Artix rootfs uses the `mesa25-android-mali` overlay. Mesa 26 has

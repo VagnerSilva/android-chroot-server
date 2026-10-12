@@ -53,9 +53,15 @@ if [ -x /usr/local/bin/zink-run ] && [ -f /etc/artix-gpu-zink.ok ]; then
     pass zink_glxinfo
   else
     failm zink_glxinfo
+    echo "zink_glxinfo exit=$rc"
+    [ -r /vendor/lib64/hw/mapper.mediatek.so ] || \
+      echo "mapper HAL indisponivel: /vendor/lib64/hw/mapper.mediatek.so"
+    sed -n '1,40p' /tmp/c-t5.err
   fi
   if grep -Eiq 'free\(\): invalid|malloc\(\):|corrupted size' /tmp/c-t5.out /tmp/c-t5.err; then
     failm zink_heap
+  elif [ "$rc" != 0 ]; then
+    echo "SKIP zink_heap (glxinfo exit=$rc; ausencia de mensagem nao comprova integridade)"
   else
     pass zink_heap
   fi
