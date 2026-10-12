@@ -7,6 +7,7 @@ ROOT="$BASE/mnt"
 RUN="$BASE/run"
 PIDF="$RUN/init.pid"
 LOG="$BASE/boot.log"
+# shellcheck disable=SC2034
 INIT_DEFAULT=/sbin/dinit
 
 BB=/data/adb/ksu/bin/busybox

@@ -4,6 +4,11 @@
 # KernelSU late_start: sobe o container apos o boot.
 # ============================================================
 
+if [ -r /data/linux/common.sh ]; then
+  . /data/linux/common.sh
+  rotate_boot_log /data/linux/boot.log 262144 || true
+fi
+
 i=0
 until [ "$(getprop sys.boot_completed)" = "1" ] || [ $i -ge 120 ]; do
   sleep 2

@@ -354,6 +354,7 @@ dmesg | grep -iE 'avc|mali|gpu'
 | Strict gate | `STRICT=1 REQUIRE_X11=1 /data/linux/linux-status.sh` |
 | Start | `/data/linux/linux-start.sh` |
 | Stop | `/data/linux/linux-stop.sh` |
+| Back up rootfs | `/data/linux/linux-backup.sh` (container must be stopped; existing backups are never overwritten) |
 | Wipe chroot + project scripts | `YES=1 /data/linux/wipe-chroot.sh` (deletes `/data/linux/*` and `99-linux.sh`; Android untouched) |
 | Shell (root) | `/data/linux/linux-shell.sh` |
 | Shell (user) | `/data/linux/linux-shell.sh name` |
@@ -377,6 +378,24 @@ dmesg | grep -iE 'avc|mali|gpu'
 | Log | `cat /data/linux/boot.log` |
 | SSH | `ssh -p 2222 user@<ip>` |
 | Desktop | Termux:X11 app (DISPLAY `:0`) |
+
+### Backup and restore
+
+The default backup is `/data/linux/rootfs.img.bak`. Stop the container first; the command checks that the image is unmounted, verifies free space, and compares the completed copy byte-for-byte. It never replaces an existing backup. To evaluate Mesa 26 on an isolated copy, run `/data/linux/test-mesa-26.sh`; see [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for the current block and evidence required to reconsider it.
+
+To restore, preserve the current image at a separate destination and explicitly confirm replacement:
+
+```sh
+/data/linux/linux-stop.sh
+/data/linux/linux-backup.sh /data/linux/rootfs.img.pre-restore
+printf 'Type RESTORE to replace rootfs.img: '
+read -r answer
+[ "$answer" = RESTORE ] || exit 1
+test ! -e /data/linux/rootfs.img.restore.tmp || exit 1
+cp -p /data/linux/rootfs.img.bak /data/linux/rootfs.img.restore.tmp
+cmp -s /data/linux/rootfs.img.bak /data/linux/rootfs.img.restore.tmp || exit 1
+mv /data/linux/rootfs.img.restore.tmp /data/linux/rootfs.img
+```
 
 ---
 

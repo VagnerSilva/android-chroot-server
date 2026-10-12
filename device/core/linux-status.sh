@@ -41,7 +41,6 @@ fi
 
 # rede
 IP_CIDR=$(ip -4 addr show 2>/dev/null | awk '/inet / && /wlan|eth|rndis|rmnet/ {print $2; exit}')
-IP="${IP_CIDR%/*}"
 [ -n "$IP_CIDR" ] && ok "rede $IP_CIDR" || info "rede (sem IP wlan/eth)"
 
 # timezone (Android persist.sys.timezone vs /etc/timezone no rootfs)

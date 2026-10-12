@@ -1,6 +1,6 @@
 --- a/src/gallium/drivers/zink/zink_screen.c
 +++ b/src/gallium/drivers/zink/zink_screen.c
-@@ -713,6 +713,12 @@
+@@ -713,6 +713,11 @@
        uint32_t modes = BITFIELD_MASK(MESA_PRIM_COUNT);
        if (!screen->have_triangle_fans || !screen->info.feats.features.geometryShader)
           modes &= ~BITFIELD_BIT(MESA_PRIM_QUADS);

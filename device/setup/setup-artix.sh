@@ -23,11 +23,9 @@ EOF
 fi
 
 # root e users comuns na rede
-for u in root; do
-  if id "$u" >/dev/null 2>&1; then
-    usermod -aG aid_inet,aid_net_raw,aid_sdcard_rw "$u" 2>/dev/null || true
-  fi
-done
+if id root >/dev/null 2>&1; then
+  usermod -aG aid_inet,aid_net_raw,aid_sdcard_rw root 2>/dev/null || true
+fi
 
 mkdir -p /mnt/android /run /tmp /usr/local/sbin /etc/pacman.d/hooks
 chmod 1777 /tmp

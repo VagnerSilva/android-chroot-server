@@ -15,12 +15,23 @@ foreach ($req in @(
   "device\setup\setup-gpu-hybris.sh",
   "device\setup\run-setup-gpu-hybris.sh",
   "device\setup\bootstrap.sh",
-  "host\prepare.sh"
+  "host\prepare.sh",
+  "host\validate.sh"
 )) {
   $p = Join-Path $Root $req
   if (-not (Test-Path $p)) {
     Write-Error "ficheiro obrigatorio ausente: $p"
   }
+}
+
+$validator = Join-Path $Root "host\validate.sh"
+if (-not (Get-Command bash -ErrorAction SilentlyContinue)) {
+  Write-Error "bash nao encontrado no PATH (necessario para host/validate.sh)"
+}
+Write-Host ">> validar scripts antes do deploy"
+& bash $validator
+if ($LASTEXITCODE -ne 0) {
+  Write-Error "validacao de scripts falhou; deploy cancelado"
 }
 
 Write-Host ">> dispositivo:"

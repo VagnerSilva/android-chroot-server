@@ -354,6 +354,7 @@ dmesg | grep -iE 'avc|mali|gpu'
 | Gate estrito | `STRICT=1 REQUIRE_X11=1 /data/linux/linux-status.sh` |
 | Ligar | `/data/linux/linux-start.sh` |
 | Desligar | `/data/linux/linux-stop.sh` |
+| Backup do rootfs | `/data/linux/linux-backup.sh` (exige container parado; não sobrescreve backup) |
 | Wipe chroot + scripts do projecto | `YES=1 /data/linux/wipe-chroot.sh` (apaga `/data/linux/*` e `99-linux.sh`; Android intacto) |
 | Shell (root) | `/data/linux/linux-shell.sh` |
 | Shell (user) | `/data/linux/linux-shell.sh nome` |
@@ -377,6 +378,24 @@ dmesg | grep -iE 'avc|mali|gpu'
 | Log | `cat /data/linux/boot.log` |
 | SSH | `ssh -p 2222 user@<ip>` |
 | Desktop | app Termux:X11 (DISPLAY `:0`) |
+
+### Backup e restauração
+
+O backup padrão é `/data/linux/rootfs.img.bak`. Pare o container antes; o comando confere montagem, espaço livre e integridade da cópia. Um backup existente nunca é substituído. Para testar Mesa 26 em uma cópia isolada, use `/data/linux/test-mesa-26.sh`; veja [KNOWN_ISSUES.md](KNOWN_ISSUES.md) para critérios e evidências.
+
+Para restaurar, primeiro preserve a imagem atual em outro destino e confirme explicitamente a substituição:
+
+```sh
+/data/linux/linux-stop.sh
+/data/linux/linux-backup.sh /data/linux/rootfs.img.pre-restore
+printf 'Digite RESTORE para substituir rootfs.img: '
+read -r answer
+[ "$answer" = RESTORE ] || exit 1
+test ! -e /data/linux/rootfs.img.restore.tmp || exit 1
+cp -p /data/linux/rootfs.img.bak /data/linux/rootfs.img.restore.tmp
+cmp -s /data/linux/rootfs.img.bak /data/linux/rootfs.img.restore.tmp || exit 1
+mv /data/linux/rootfs.img.restore.tmp /data/linux/rootfs.img
+```
 
 ---
 

@@ -560,7 +560,6 @@ GROUP (
 )
 EOF
 
-  SYSROOT_LINK="$link_sysroot"
 }
 
 # ---------------------------------------------------------------------------
@@ -571,8 +570,6 @@ setup_toolchain_env() {
 
   # GCC aarch64 usa paths absolutos em libc.so; não precisa do sysroot
   # artificial que o clang exigia. Mantemos SYSROOT_FINAL só para pkg-config.
-  SYSROOT_LINK=""
-
   CC_FINAL=aarch64-linux-gnu-gcc
   CXX_FINAL=aarch64-linux-gnu-g++
   AR_FINAL=aarch64-linux-gnu-ar
