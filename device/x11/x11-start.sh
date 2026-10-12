@@ -54,11 +54,13 @@ ensure_loader() {
   fi
   if [ -f "$BASE/termux-x11/termux-x11" ]; then
     cp "$BASE/termux-x11/termux-x11" "$TERMUX_X11_BIN"
+    strip_crlf "$TERMUX_X11_BIN"
     chmod 755 "$TERMUX_X11_BIN"
     chown "$TERMUX_UID:$TERMUX_UID" "$TERMUX_X11_BIN" 2>/dev/null || true
   fi
   if [ -f "$BASE/termux-x11/termux-x11-chroot" ]; then
     cp "$BASE/termux-x11/termux-x11-chroot" "$TERMUX_X11_WRAPPER"
+    strip_crlf "$TERMUX_X11_WRAPPER"
     chmod 755 "$TERMUX_X11_WRAPPER"
     chown "$TERMUX_UID:$TERMUX_UID" "$TERMUX_X11_WRAPPER" 2>/dev/null || true
   fi
