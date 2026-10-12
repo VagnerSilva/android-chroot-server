@@ -25,17 +25,10 @@ foreach ($req in @(
 }
 
 $validator = Join-Path $Root "host\validate.sh"
-if (-not (Get-Command bash -ErrorAction SilentlyContinue)) {
+$bash = Get-Command bash -ErrorAction SilentlyContinue
+if (-not $bash) {
   Write-Error "bash nao encontrado no PATH (necessario para host/validate.sh)"
 }
-Write-Host ">> validar scripts antes do deploy"
-& bash $validator
-if ($LASTEXITCODE -ne 0) {
-  Write-Error "validacao de scripts falhou; deploy cancelado"
-}
-
-Write-Host ">> dispositivo:"
-& adb devices
 
 # garantir LF nos .sh antes do push (evita 'unexpected do' no Android)
 Get-ChildItem -Path $Root -Recurse -Filter *.sh | ForEach-Object {
@@ -43,6 +36,27 @@ Get-ChildItem -Path $Root -Recurse -Filter *.sh | ForEach-Object {
   $enc = New-Object System.Text.UTF8Encoding $false
   [IO.File]::WriteAllText($_.FullName, $t, $enc)
 }
+
+Write-Host ">> validar scripts antes do deploy"
+if ($bash.Source -match '\\(WindowsApps|System32)\\bash\.exe$') {
+  $wsl = Get-Command wsl.exe -ErrorAction SilentlyContinue
+  if (-not $wsl) {
+    Write-Error "wsl.exe nao encontrado para executar o Bash do Windows"
+  }
+  $linuxValidator = & $wsl.Source --exec wslpath -u $validator
+  if ($LASTEXITCODE -ne 0 -or -not $linuxValidator) {
+    Write-Error "nao foi possivel converter o caminho do validador para WSL: $validator"
+  }
+  & $wsl.Source --exec bash $linuxValidator
+} else {
+  & $bash.Source $validator
+}
+if ($LASTEXITCODE -ne 0) {
+  Write-Error "validacao de scripts falhou (codigo $LASTEXITCODE); deploy cancelado. Consulte a saida do validador acima."
+}
+
+Write-Host ">> dispositivo:"
+& adb devices
 
 $remote = "/data/local/tmp/rootfs"
 Write-Host ">> limpar $remote (evita adb push aninhado host/host)"
