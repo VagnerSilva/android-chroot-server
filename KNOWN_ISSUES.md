@@ -1,5 +1,7 @@
 # Known Issues
 
+> Estado atual, medições recentes e critérios GPU canônicos: [GPU_KNOWLEDGE_BASE.md](GPU_KNOWLEDGE_BASE.md). Este arquivo preserva evidências e histórico; evite repetir aqui o resumo de estado atual.
+
 ## Mesa 25 Zink mapper path (fixed 2026-10-12)
 
 Zink `glxinfo -B` aborted with exit 134 and

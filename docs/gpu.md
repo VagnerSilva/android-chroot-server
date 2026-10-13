@@ -73,6 +73,6 @@ Run `vulkaninfo` last when diagnosing the driver. The status gate `STRICT=1` tre
 
 If Android SELinux blocks GPU access, inspect `dmesg | grep -iE 'avc|mali|gpu'`. On some Android 16 devices, Termux:X11's `app_process` may fail with `NoClassDefFoundError`; update both the app and loader from nightly and inspect `logcat | grep termux-x11`.
 
-The active runtime is pinned to Mesa 25.1.2. Mesa 26.2.4 was not promoted: the isolated evaluation did not demonstrate a renderer improvement or the required GL target. Read the measurements and retest constraints in [`KNOWN_ISSUES.md`](../KNOWN_ISSUES.md) before changing the production block. Do not force a GL version or fabricate Vulkan capability bits.
+The canonical GPU version status, measurements and promotion criteria are maintained in [`GPU_KNOWLEDGE_BASE.md`](../GPU_KNOWLEDGE_BASE.md). See [`KNOWN_ISSUES.md`](../KNOWN_ISSUES.md) for the detailed historical evaluation. Do not force a GL version or fabricate Vulkan capability bits.
 
 For symptoms such as missing Mali renderer, invalid ELF, black screen, or X11 startup failure, see [Troubleshooting](troubleshooting.md).
