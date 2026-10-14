@@ -4,9 +4,9 @@
 #
 # Procura (nesta ordem):
 #   1) argumento / ARMTIX_TAR
-#   2) home Termux: ~/armtix-dinit-20260921.tar.xz (ou armtix-dinit-*.tar.xz)
-#   3) /data/local/tmp/armtix-dinit-20260921.tar.xz (ou armtix-dinit-*.tar.xz)
-#   4) download → /data/local/tmp/armtix-dinit-20260921.tar.xz
+#   2) home Termux: ~/armtix-dinit-*.tar.xz (mais recente por nome)
+#   3) /data/local/tmp/armtix-dinit-*.tar.xz (mais recente por nome)
+#   4) download da imagem dinit mais recente no indice Armtix
 #
 # su -c "/data/linux/install-rootfs.sh"
 # su -c "/data/linux/install-rootfs.sh /caminho/arquivo.tar.xz"
@@ -18,8 +18,7 @@ set -e
 
 TERMUX_HOME=/data/data/com.termux/files/home
 TMP_DIR=/data/local/tmp
-TAR_NAME=armtix-dinit-20260921.tar.xz
-TAR_URL="https://armtix.artixlinux.org/images/$TAR_NAME"
+IMAGES_URL=https://armtix.artixlinux.org/images/
 SIZE_GB="${SIZE_GB:-8}"
 
 find_downloader() {
@@ -36,31 +35,34 @@ find_downloader() {
   return 1
 }
 
-download_tarball() {
-  out="$1"
+download_url() {
   dl=$(find_downloader) || {
-    echo "!! sem curl/wget para baixar $TAR_URL"
+    echo "!! sem curl/wget para baixar $1" >&2
     return 1
   }
-  echo ">> download: $TAR_URL"
-  echo "   destino: $out"
   case "$dl" in
     *curl)
-      "$dl" -fL --retry 3 --connect-timeout 30 -o "$out.partial" "$TAR_URL" || {
-        rm -f "$out.partial"; return 1
-      }
+      "$dl" -fL --retry 3 --connect-timeout 30 -o "$2" "$1"
       ;;
     *wget)
       # $dl pode ser "busybox wget" (duas palavras)
       # shellcheck disable=SC2086
-      $dl -O "$out.partial" "$TAR_URL" || {
-        rm -f "$out.partial"; return 1
-      }
+      $dl -O "$2" "$1"
       ;;
     *)
       return 1
       ;;
   esac
+}
+
+download_tarball() {
+  out="$1"
+  echo ">> download: $TAR_URL" >&2
+  echo "   destino: $out" >&2
+  download_url "$TAR_URL" "$out.partial" >&2 || {
+    rm -f "$out.partial"
+    return 1
+  }
   mv -f "$out.partial" "$out"
 }
 
@@ -80,15 +82,24 @@ resolve_tarball() {
   if [ -n "${ARMTIX_TAR:-}" ] && [ -f "$ARMTIX_TAR" ]; then
     echo "$ARMTIX_TAR"; return 0
   fi
-  for cand in \
-    "$TERMUX_HOME/$TAR_NAME" \
-    "$TMP_DIR/$TAR_NAME"
-  do
-    [ -f "$cand" ] && { echo "$cand"; return 0; }
-  done
   hit=$(pick_armtix_in_dir "$TERMUX_HOME") && { echo "$hit"; return 0; }
   hit=$(pick_armtix_in_dir "$TMP_DIR") && { echo "$hit"; return 0; }
 
+  echo ">> consultando imagens: $IMAGES_URL" >&2
+  index=$(download_url "$IMAGES_URL" -) || {
+    echo "!! falha ao consultar $IMAGES_URL" >&2
+    return 1
+  }
+  TAR_NAME=$(printf '%s\n' "$index" | awk -F '"' '{
+    for (field = 2; field <= NF; field += 2)
+      if ($field ~ /^armtix-dinit-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]\.tar\.xz$/)
+        print $field
+  }' | sort | tail -n1)
+  if [ -z "$TAR_NAME" ]; then
+    echo "!! nenhuma imagem armtix-dinit-AAAAMMDD.tar.xz em $IMAGES_URL" >&2
+    return 1
+  fi
+  TAR_URL="$IMAGES_URL$TAR_NAME"
   dest="$TMP_DIR/$TAR_NAME"
   download_tarball "$dest" || return 1
   echo "$dest"
@@ -97,8 +108,8 @@ resolve_tarball() {
 TARBALL=$(resolve_tarball "${1:-}") || true
 if [ -z "$TARBALL" ] || [ ! -f "$TARBALL" ]; then
   echo "uso: $0 [rootfs.tar|tar.gz|tar.xz]"
-  echo "padrao: $TERMUX_HOME/$TAR_NAME ou $TMP_DIR/$TAR_NAME"
-  echo "url:    $TAR_URL"
+  echo "padrao: $TERMUX_HOME/armtix-dinit-*.tar.xz ou $TMP_DIR/armtix-dinit-*.tar.xz"
+  echo "indice: $IMAGES_URL"
   echo
   echo "procurando em $TERMUX_HOME:"
   ls -lh "$TERMUX_HOME"/*.tar* 2>/dev/null || echo "  (nenhum)"
